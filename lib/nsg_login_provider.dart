@@ -1,27 +1,29 @@
-import 'package:flutter/material.dart';
-import 'package:nsg_data/nsg_data.dart';
+/*import 'package:flutter/material.dart';
+import 'package:nsg_controls/nsg_controls.dart';
+import 'package:nsg_data/nsg_data.dart' as nsg_data;
 import 'package:nsg_login/nsg_snackbar.dart';
+import 'package:nsg_login/pages/nsg_login_params.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'nsgLoginModel.dart';
-import 'nsgPhoneLoginPage.dart';
+import 'nsg_login_model.dart';
+
+enum NsgLoginType { phone, email }
 
 class NsgLoginProvider {
   String phoneNumber = '';
-  NsgDataProvider provider;
+  nsg_data.NsgDataProvider provider;
+  bool saveToken = true;
+  DateTime? smsRequestedTime;
+  bool saveTokenWebDefaultTrue = false;
+  final NsgLoginParams widgetParams;
 
-  NsgLoginProvider({required this.provider});
-// Future<Image> getCaptcha() async {
-//     var response = await imageRequest(
-//         debug: isDebug, function: 'GetCaptcha', url: '$serverUri/$authorizationApi/GetCaptcha', method: 'GET', headers: getAuthorizationHeader());
-
-//     return response;
-//   }
+  NsgLoginProvider({required this.provider, required this.widgetParams});
 
   Future<NsgLoginResponse> phoneLoginRequestSMS(
       {required String phoneNumber,
       required String securityCode,
-      NsgLoginType? loginType}) async {
+      NsgLoginType? loginType,
+      required String firebaseToken}) async {
     this.phoneNumber = phoneNumber;
     var login = NsgPhoneLoginModel();
     login.phoneNumber = phoneNumber;
@@ -30,19 +32,22 @@ class NsgLoginProvider {
       login.register = true;
     }
     login.securityCode = securityCode == '' ? 'security' : securityCode;
+    login.firebaseToken = firebaseToken;
     var s = login.toJson();
-
-    var response = await (provider.baseRequest(
-        function: 'PhoneLoginRequestSMS',
-        headers: provider.getAuthorizationHeader(),
-        url:
-            '${provider.serverUri}/${provider.authorizationApi}/PhoneLoginRequestSMS',
-        method: 'POST',
-        params: s));
+    Map<String, dynamic>? response;
+    await nsgFutureProgressAndException(func: () async {
+      response = await (provider.baseRequest(
+          function: 'PhoneLoginRequestSMS',
+          headers: provider.getAuthorizationHeader(),
+          url:
+              '${provider.serverUri}/${provider.authorizationApi}/PhoneLoginRequestSMS',
+          method: 'POST',
+          params: s));
+    });
 
     var loginResponse = NsgLoginResponse.fromJson(response);
     if (loginResponse.errorCode == 0) {
-      provider.smsRequestedTime = DateTime.now();
+      smsRequestedTime = DateTime.now();
     }
     return loginResponse;
   }
@@ -70,7 +75,7 @@ class NsgLoginProvider {
     if (loginResponse.errorCode == 0) {
       provider.token = loginResponse.token;
       provider.isAnonymous = loginResponse.isAnonymous;
-      if (!provider.isAnonymous && provider.saveToken) {
+      if (!provider.isAnonymous && saveToken) {
         var prefs = await SharedPreferences.getInstance();
         await prefs.setString(provider.applicationName, provider.token!);
       }
@@ -121,4 +126,16 @@ class NsgLoginProvider {
     }
     return NsgLoginResponse(isError: true, errorCode: 500);
   }
+
+  Future<Image> getCaptcha() async {
+    var response = await provider.imageRequest(
+        debug: provider.isDebug,
+        function: 'GetCaptcha',
+        url: '${provider.serverUri}/${provider.authorizationApi}/GetCaptcha',
+        method: 'GET',
+        headers: provider.getAuthorizationHeader());
+
+    return response;
+  }
 }
+*/
