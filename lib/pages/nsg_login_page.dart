@@ -742,63 +742,71 @@ class LoginWidgetState extends State<LoginWidget> {
         ),
       if (widget.widgetParams!.usePhoneLogin)
         if (loginType == NsgLoginType.phone)
-          TextFormField(
-            key: GlobalKey(),
-            cursorColor: Theme.of(context).primaryColor,
-            keyboardType: TextInputType.phone,
-            inputFormatters: [phoneFormatter],
-            // style: widget.widgetParams!.textPhoneField,
-            style: TextStyle(color: nsgtheme.colorText),
-            textAlign: TextAlign.center,
-            decoration: InputDecoration(
-              contentPadding: const EdgeInsets.only(left: 10, top: 10, right: 10),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(nsgtheme.borderRadius),
+          Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: TextFormField(
+              key: GlobalKey(),
+              cursorColor: Theme.of(context).primaryColor,
+              keyboardType: TextInputType.phone,
+              inputFormatters: [phoneFormatter],
+              // style: widget.widgetParams!.textPhoneField,
+              style: TextStyle(color: nsgtheme.colorText),
+              textAlign: TextAlign.center,
+              decoration: InputDecoration(
+                contentPadding: const EdgeInsets.only(left: 10, top: 10, right: 10),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(nsgtheme.borderRadius),
+                ),
+                filled: true,
+                fillColor: widget.widgetParams!.phoneFieldColor,
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(nsgtheme.borderRadius),
+                  borderSide: BorderSide(color: nsgtheme.colorText, width: 1.0),
+                ),
+                errorStyle: const TextStyle(fontSize: 12),
+                hintText: widget.widgetParams!.textEnterEmail,
+                hintStyle: TextStyle(color: nsgtheme.colorText.withOpacity(0.3)),
               ),
-              filled: true,
-              fillColor: widget.widgetParams!.phoneFieldColor,
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(nsgtheme.borderRadius),
-                borderSide: BorderSide(color: nsgtheme.colorText, width: 1.0),
-              ),
-              errorStyle: const TextStyle(fontSize: 12),
-              hintText: widget.widgetParams!.textEnterEmail,
-              hintStyle: TextStyle(color: nsgtheme.colorText.withOpacity(0.3)),
+              initialValue: phoneNumber,
+              onChanged: (value) => phoneNumber = value,
+              validator: (value) =>
+                  isPhoneValid(value!) && value.length >= 16 ? null : widget.widgetParams!.textEnterCorrectPhone,
             ),
-            initialValue: phoneNumber,
-            onChanged: (value) => phoneNumber = value,
-            validator: (value) =>
-                isPhoneValid(value!) && value.length >= 16 ? null : widget.widgetParams!.textEnterCorrectPhone,
           ),
       if (widget.widgetParams!.useEmailLogin)
         if (loginType == NsgLoginType.email)
-          TextFormField(
-            key: GlobalKey(),
-            cursorColor: Theme.of(context).primaryColor,
-            keyboardType: TextInputType.emailAddress,
-            inputFormatters: null,
-            style: TextStyle(color: nsgtheme.colorText),
-            textAlign: TextAlign.center,
-            decoration: InputDecoration(
-              contentPadding: const EdgeInsets.only(left: 10, top: 10, right: 10),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(nsgtheme.borderRadius),
+          Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: TextFormField(
+              key: GlobalKey(),
+              cursorColor: Theme.of(context).primaryColor,
+              keyboardType: TextInputType.emailAddress,
+              inputFormatters: null,
+              style: TextStyle(color: nsgtheme.colorText),
+              textAlign: TextAlign.center,
+              decoration: InputDecoration(
+                contentPadding: const EdgeInsets.only(left: 10, top: 10, right: 10),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(nsgtheme.borderRadius),
+                ),
+                filled: true,
+                fillColor: widget.widgetParams!.phoneFieldColor,
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(nsgtheme.borderRadius),
+                  borderSide: BorderSide(color: nsgtheme.colorText, width: 1.0),
+                ),
+                errorStyle: const TextStyle(fontSize: 12),
+                hintText: widget.widgetParams!.textEnterEmail,
+                hintStyle: TextStyle(color: nsgtheme.colorText.withOpacity(0.3)),
               ),
-              filled: true,
-              fillColor: widget.widgetParams!.phoneFieldColor,
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(nsgtheme.borderRadius),
-                borderSide: BorderSide(color: nsgtheme.colorText, width: 1.0),
-              ),
-              errorStyle: const TextStyle(fontSize: 12),
-              hintText: widget.widgetParams!.textEnterEmail,
-              hintStyle: TextStyle(color: nsgtheme.colorText.withOpacity(0.3)),
+              initialValue: email,
+              onChanged: (value) => email = value,
+              validator: (value) => null,
             ),
-            initialValue: email,
-            onChanged: (value) => email = value,
-            validator: (value) => null,
           ),
       const SizedBox(height: 15),
+
+      /// GET CODE кнопка
       NsgButton(
           margin: EdgeInsets.zero,
           onPressed: () {
@@ -833,12 +841,14 @@ class LoginWidgetState extends State<LoginWidget> {
             onChanged: (value) => newPassword2 = value,
             validator: (value) => value == newPassword1 ? null : 'Passwords mistmatch'),
       const SizedBox(height: 15),
+
+      /// CONFIRM кнопка
       NsgButton(
           margin: EdgeInsets.zero,
           onPressed: () {
             setNewPassword(context, securityCode: securityCode, loginType: loginType, newPassword: newPassword1);
           },
-          text: widget.provider.widgetParams.textSendSms.toUpperCase()),
+          text: widget.provider.widgetParams.textConfirm.toUpperCase()),
     ];
   }
 
@@ -849,32 +859,35 @@ class LoginWidgetState extends State<LoginWidget> {
       bool obscureText = false,
       Function(String)? onChanged,
       String? Function(String?)? validator}) {
-    return TextFormField(
-      key: GlobalKey(),
-      cursorColor: Theme.of(context).primaryColor,
-      keyboardType: TextInputType.emailAddress,
-      inputFormatters: null,
-      style: TextStyle(color: nsgtheme.colorText),
-      textAlign: TextAlign.center,
-      decoration: InputDecoration(
-        contentPadding: const EdgeInsets.only(left: 10, top: 10, right: 10),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(nsgtheme.borderRadius),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: TextFormField(
+        key: GlobalKey(),
+        cursorColor: Theme.of(context).primaryColor,
+        keyboardType: TextInputType.emailAddress,
+        inputFormatters: null,
+        style: TextStyle(color: nsgtheme.colorText),
+        textAlign: TextAlign.center,
+        decoration: InputDecoration(
+          contentPadding: const EdgeInsets.only(left: 10, top: 10, right: 10),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(nsgtheme.borderRadius),
+          ),
+          filled: true,
+          fillColor: widget.widgetParams!.phoneFieldColor,
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(nsgtheme.borderRadius),
+            borderSide: BorderSide(color: nsgtheme.colorText, width: 1.0),
+          ),
+          errorStyle: const TextStyle(fontSize: 12),
+          hintText: hintText,
+          hintStyle: TextStyle(color: nsgtheme.colorText.withOpacity(0.3)),
         ),
-        filled: true,
-        fillColor: widget.widgetParams!.phoneFieldColor,
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(nsgtheme.borderRadius),
-          borderSide: BorderSide(color: nsgtheme.colorText, width: 1.0),
-        ),
-        errorStyle: const TextStyle(fontSize: 12),
-        hintText: hintText,
-        hintStyle: TextStyle(color: nsgtheme.colorText.withOpacity(0.3)),
+        initialValue: initialValue,
+        onChanged: onChanged,
+        validator: validator,
+        obscureText: obscureText,
       ),
-      initialValue: initialValue,
-      onChanged: onChanged,
-      validator: validator,
-      obscureText: obscureText,
     );
   }
 
