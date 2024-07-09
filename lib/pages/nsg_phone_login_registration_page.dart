@@ -20,7 +20,7 @@ class NsgLoginRegistrationPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: provider.widgetParams.appbar! ? getAppBar(context) : null,
+      appBar: provider.widgetParams().appbar! ? getAppBar(context) : null,
       //backgroundColor: Colors.white,
       body: Container(
           decoration: BoxDecoration(color: nsgtheme.colorMain.withOpacity(0.1)),
