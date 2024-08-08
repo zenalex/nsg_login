@@ -326,7 +326,8 @@ class LoginWidgetState extends State<LoginWidget> {
       updateTimer!.cancel();
     }
 
-    if (answerCode.errorCode == 0 &&
+    //0 - успешно, 40201 - смс отправлено ранее. И в том и другом случае, переходим на экран ввода кода подтверждения
+    if ((answerCode.errorCode == 0 || answerCode.errorCode == 40201) &&
         (currentState == NsgLoginState.registration ||
             currentState == NsgLoginState.login)) {
       if (currentState == NsgLoginState.registration ||
@@ -336,6 +337,12 @@ class LoginWidgetState extends State<LoginWidget> {
         isLoginSuccessfull = true;
       }
       setState(() {});
+      //Если мы перешли на экран с ошибкой смс уже отправлено, выводим ошибку на экран после перехода на страницу подтверждения
+      if (answerCode.errorCode != 0) {
+        var errorMessage = widget
+            .widgetParams!.errorMessageByStatusCode!(answerCode.errorCode);
+        widget.widgetParams!.showError(context, errorMessage);
+      }
       return;
     }
     if (answerCode.errorCode == 0 && widget.widgetParams!.usePasswordLogin) {
