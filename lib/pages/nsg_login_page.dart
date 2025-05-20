@@ -31,7 +31,9 @@ class NsgLoginPage extends StatelessWidget {
     return Scaffold(
       appBar: (widgetParams().appbar ?? false) ? getAppBar(context) : null,
       //backgroundColor: Colors.white,
-      body: Container(decoration: BoxDecoration(color: nsgtheme.colorMain.withOpacity(0.1)), child: LoginWidget(this, provider, widgetParams: widgetParams())),
+      body: Container(
+          decoration: BoxDecoration(color: nsgtheme.colorMain.withOpacity(0.1)),
+          child: LoginWidget(this, provider, widgetParams: widgetParams())),
     );
   }
 
@@ -55,7 +57,7 @@ class NsgLoginPage extends StatelessWidget {
       checkColor: nsgtheme.colorText,
       toggleInside: true,
       simple: true,
-      margin: const EdgeInsets.only(top: 5, bottom: 5),
+      margin: EdgeInsets.zero,
       label: widgetParams().textRememberUser,
       onPressed: (currentValue) {
         provider.saveToken = currentValue;
@@ -97,6 +99,7 @@ class LoginWidget extends StatefulWidget {
 }
 
 class LoginWidgetState extends State<LoginWidget> {
+  InputDecoration decor = const InputDecoration();
   Image? captureImage;
   String phoneNumber = '';
   String email = '';
@@ -127,7 +130,26 @@ class LoginWidgetState extends State<LoginWidget> {
   @override
   void initState() {
     super.initState();
-    widget.loginPage.callback.sendDataPressed = () => doSmsRequest(Get.context!, loginType: loginType, password: password, firebaseToken: firebaseToken);
+    decor = InputDecoration(
+        contentPadding: const EdgeInsets.all(10),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(nsgtheme.borderRadius),
+          borderSide: BorderSide(color: nsgtheme.colorTertiary, width: 1.0),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(nsgtheme.borderRadius),
+          borderSide: BorderSide(color: nsgtheme.colorTertiary, width: 1.0),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(nsgtheme.borderRadius),
+          borderSide: BorderSide(color: nsgtheme.colorText, width: 1.0),
+        ),
+        filled: true,
+        fillColor: widget.widgetParams!.phoneFieldColor,
+        errorStyle: const TextStyle(fontSize: 12),
+        hintStyle: TextStyle(color: nsgtheme.colorText.withOpacity(0.3)));
+    widget.loginPage.callback.sendDataPressed =
+        () => doSmsRequest(Get.context!, loginType: loginType, password: password, firebaseToken: firebaseToken);
     if (widget.widgetParams!.usePhoneLogin) {
       loginType = NsgLoginType.phone;
     } else {
@@ -200,7 +222,8 @@ class LoginWidgetState extends State<LoginWidget> {
           alignment: Alignment.topRight,
           children: [
             Container(
-              decoration: BoxDecoration(color: nsgtheme.colorMainBack, borderRadius: const BorderRadius.all(Radius.circular(3.0))),
+              decoration: BoxDecoration(
+                  color: nsgtheme.colorMainBack, borderRadius: const BorderRadius.all(Radius.circular(10))),
               padding: const EdgeInsets.all(15.0),
               width: widget.widgetParams!.cardSize,
               child: Row(
@@ -225,12 +248,18 @@ class LoginWidgetState extends State<LoginWidget> {
                         //Кнопки LOGIN, REGISTRATION
                         //Для этапа ввода нового пароля отключаем их
                         if (widget.widgetParams!.usePasswordLogin && currentState != NsgLoginState.verification)
-                          Padding(
-                            padding: const EdgeInsets.only(bottom: 10),
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(10),
                             child: Row(mainAxisSize: MainAxisSize.min, children: [
                               Flexible(
                                 child: NsgButton(
-                                  margin: const EdgeInsets.only(top: 10),
+                                  borderRadius: 0,
+                                  color: currentState == NsgLoginState.login
+                                      ? nsgtheme.colorBase.b0
+                                      : nsgtheme.colorTertiary,
+                                  backColor: currentState == NsgLoginState.login
+                                      ? nsgtheme.colorPrimary
+                                      : nsgtheme.colorSecondary,
                                   onPressed: () {
                                     currentState = NsgLoginState.login;
                                     setState(() {});
@@ -238,12 +267,16 @@ class LoginWidgetState extends State<LoginWidget> {
                                   text: widget.widgetParams!.headerMessageLogin.toUpperCase(),
                                 ),
                               ),
-                              const SizedBox(
-                                width: 20,
-                              ),
+
                               Flexible(
                                 child: NsgButton(
-                                  margin: const EdgeInsets.only(top: 10),
+                                  borderRadius: 0,
+                                  color: currentState == NsgLoginState.registration
+                                      ? nsgtheme.colorBase.b0
+                                      : nsgtheme.colorTertiary,
+                                  backColor: currentState == NsgLoginState.registration
+                                      ? nsgtheme.colorPrimary
+                                      : nsgtheme.colorSecondary,
                                   onPressed: () {
                                     currentState = NsgLoginState.registration;
                                     setState(() {});
@@ -259,6 +292,7 @@ class LoginWidgetState extends State<LoginWidget> {
                               // ),
                             ]),
                           ),
+
                         if (currentState == NsgLoginState.login) ..._loginStateWidget(),
                         if (currentState == NsgLoginState.registration) ..._registrationStateWidget(),
                         if (currentState == NsgLoginState.verification) ..._verificationStateWidget(),
@@ -268,19 +302,21 @@ class LoginWidgetState extends State<LoginWidget> {
                 ],
               ),
             ),
-            InkWell(
-              onTap: () {
-                NsgNavigator.pop();
-              },
-              child: Padding(
-                padding: const EdgeInsets.all(5.0),
-                child: Icon(
-                  NsgIcons.close,
-                  color: nsgtheme.colorPrimary.b100.withOpacity(0.5),
-                  size: 18,
+            if (widget.widgetParams!.onClose != null)
+              InkWell(
+                onTap: () {
+                  NsgNavigator.pop();
+                  widget.widgetParams!.onClose!;
+                },
+                child: Padding(
+                  padding: const EdgeInsets.all(5.0),
+                  child: Icon(
+                    NsgIcons.close,
+                    color: nsgtheme.colorPrimary.b100.withOpacity(0.5),
+                    size: 18,
+                  ),
                 ),
-              ),
-            )
+              )
           ],
         ),
       ),
@@ -311,7 +347,8 @@ class LoginWidgetState extends State<LoginWidget> {
     }
 
     //0 - успешно, 40201 - смс отправлено ранее. И в том и другом случае, переходим на экран ввода кода подтверждения
-    if ((answerCode.errorCode == 0 || answerCode.errorCode == 40201) && (currentState == NsgLoginState.registration || currentState == NsgLoginState.login)) {
+    if ((answerCode.errorCode == 0 || answerCode.errorCode == 40201) &&
+        (currentState == NsgLoginState.registration || currentState == NsgLoginState.login)) {
       if (currentState == NsgLoginState.registration || !widget.widgetParams!.usePasswordLogin) {
         currentState = NsgLoginState.verification;
       } else {
@@ -355,7 +392,8 @@ class LoginWidgetState extends State<LoginWidget> {
   }
 
   ///Запросить код проверки в виде СМС или t-mail в зависимости от loginType
-  void doSmsRequest(BuildContext context, {NsgLoginType loginType = NsgLoginType.phone, String? password, required String firebaseToken}) {
+  void doSmsRequest(BuildContext context,
+      {NsgLoginType loginType = NsgLoginType.phone, String? password, required String firebaseToken}) {
     if (!_formKey.currentState!.validate()) return;
 
     NsgMetrica.reportLoginStart(loginType.toString());
@@ -371,7 +409,10 @@ class LoginWidgetState extends State<LoginWidget> {
       //Регистрация нового пользователя/восстановление пароля по e-mail или вход по паролю
       //Опраделяется наличием или отсутствием captchaCode
       widget.provider
-          .phoneLoginPassword(phoneNumber: loginType == NsgLoginType.phone ? phoneNumber : email, securityCode: captchaCode, loginType: loginType)
+          .phoneLoginPassword(
+              phoneNumber: loginType == NsgLoginType.phone ? phoneNumber : email,
+              securityCode: captchaCode,
+              loginType: loginType)
           .then((value) => checkRequestSMSanswer(context, value))
           .catchError((e) {
         widget.widgetParams!.showError(context, widget.widgetParams!.textCheckInternet);
@@ -379,7 +420,10 @@ class LoginWidgetState extends State<LoginWidget> {
     } else {
       widget.provider
           .phoneLoginRequestSMS(
-              phoneNumber: loginType == NsgLoginType.phone ? phoneNumber : email, securityCode: captchaCode, loginType: loginType, firebaseToken: firebaseToken)
+              phoneNumber: loginType == NsgLoginType.phone ? phoneNumber : email,
+              securityCode: captchaCode,
+              loginType: loginType,
+              firebaseToken: firebaseToken)
           .then((value) => checkRequestSMSanswer(context, value))
           .catchError((e) {
         widget.widgetParams!.showError(context, widget.widgetParams!.textCheckInternet);
@@ -442,15 +486,21 @@ class LoginWidgetState extends State<LoginWidget> {
           ),
           child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 15.0, vertical: 15.0),
-              child: Row(mainAxisAlignment: MainAxisAlignment.center, crossAxisAlignment: CrossAxisAlignment.center, children: [
-                Expanded(
-                    child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.center, children: <Widget>[
-                  Text(
-                    widget.widgetParams!.textLoginSuccessful,
-                    style: widget.widgetParams!.headerMessageStyle,
-                  )
-                ]))
-              ]))),
+              child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Expanded(
+                        child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: <Widget>[
+                          Text(
+                            widget.widgetParams!.textLoginSuccessful,
+                            style: widget.widgetParams!.headerMessageStyle,
+                          )
+                        ]))
+                  ]))),
     );
   }
 
@@ -459,11 +509,12 @@ class LoginWidgetState extends State<LoginWidget> {
     return [
       if (widget.widgetParams!.useEmailLogin && widget.widgetParams!.usePhoneLogin)
         Padding(
-          padding: const EdgeInsets.only(bottom: 5),
+          padding: const EdgeInsets.only(bottom: 5, top: 5),
           child: Row(
             children: [
               Expanded(
                   child: NsgCheckBox(
+                margin: EdgeInsets.zero,
                 key: GlobalKey(),
                 radio: true,
                 label: widget.widgetParams!.textEnterPhone,
@@ -476,6 +527,7 @@ class LoginWidgetState extends State<LoginWidget> {
               )),
               Expanded(
                   child: NsgCheckBox(
+                      margin: EdgeInsets.zero,
                       key: GlobalKey(),
                       radio: true,
                       label: widget.widgetParams!.textEnterEmail,
@@ -497,24 +549,9 @@ class LoginWidgetState extends State<LoginWidget> {
             inputFormatters: [phoneFormatter],
             style: TextStyle(color: nsgtheme.colorText),
             textAlign: TextAlign.center,
-            decoration: InputDecoration(
-                contentPadding: const EdgeInsets.only(left: 10, top: 10, right: 10),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(5.0),
-                ),
-                filled: true,
-                fillColor: widget.widgetParams!.phoneFieldColor,
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(nsgtheme.borderRadius),
-                  borderSide: BorderSide(color: nsgtheme.colorText.withOpacity(0.5), width: 1.0),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(nsgtheme.borderRadius),
-                  borderSide: BorderSide(color: nsgtheme.colorText, width: 1.0),
-                ),
-                errorStyle: const TextStyle(fontSize: 12),
-                hintText: widget.widgetParams!.textEnterPhone,
-                hintStyle: TextStyle(color: nsgtheme.colorText.withOpacity(0.3))),
+            decoration: decor.copyWith(
+              hintText: widget.widgetParams!.textEnterPhone,
+            ),
             initialValue: phoneNumber,
             onChanged: (value) => phoneNumber = value,
             validator: (value) => isPhoneValid(value!) ? null : widget.widgetParams!.textEnterCorrectPhone,
@@ -528,20 +565,8 @@ class LoginWidgetState extends State<LoginWidget> {
             inputFormatters: null,
             style: TextStyle(color: nsgtheme.colorText),
             textAlign: TextAlign.center,
-            decoration: InputDecoration(
-              contentPadding: const EdgeInsets.only(left: 10, top: 10, right: 10),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(nsgtheme.borderRadius),
-              ),
-              filled: true,
-              fillColor: widget.widgetParams!.phoneFieldColor,
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(nsgtheme.borderRadius),
-                borderSide: BorderSide(color: nsgtheme.colorText, width: 1.0),
-              ),
-              errorStyle: const TextStyle(fontSize: 12),
+            decoration: decor.copyWith(
               hintText: widget.widgetParams!.textEnterEmail,
-              hintStyle: TextStyle(color: nsgtheme.colorText.withOpacity(0.3)),
             ),
             initialValue: email,
             onChanged: (value) => email = value,
@@ -558,27 +583,15 @@ class LoginWidgetState extends State<LoginWidget> {
               inputFormatters: null,
               style: TextStyle(color: nsgtheme.colorText),
               textAlign: TextAlign.center,
-              decoration: InputDecoration(
-                contentPadding: const EdgeInsets.only(left: 10, top: 10, right: 10),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(nsgtheme.borderRadius),
-                ),
-                filled: true,
-                fillColor: widget.widgetParams!.phoneFieldColor,
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(nsgtheme.borderRadius),
-                  borderSide: BorderSide(color: nsgtheme.colorText, width: 1.0),
-                ),
-                errorStyle: const TextStyle(fontSize: 12),
+              decoration: decor.copyWith(
                 hintText: widget.widgetParams!.textEnterPassword,
-                hintStyle: TextStyle(color: nsgtheme.colorText.withOpacity(0.3)),
               ),
-              onChanged: (value) {
-                password = value;
-              },
               validator: (value) => value == null || value.length < 1 ? 'Password is required' : null),
         ),
-      if (kIsWeb || (!Platform.isAndroid && !Platform.isIOS)) widget.loginPage.getRememberMeCheckbox() else const SizedBox(height: 10),
+      if (kIsWeb || (!Platform.isAndroid && !Platform.isIOS))
+        widget.loginPage.getRememberMeCheckbox()
+      else
+        const SizedBox(height: 10),
       if (widget.widgetParams!.useCaptcha)
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -632,24 +645,8 @@ class LoginWidgetState extends State<LoginWidget> {
               cursorColor: Theme.of(context).primaryColor,
               controller: _captchaController,
               textAlign: TextAlign.center,
-              decoration: InputDecoration(
-                contentPadding: const EdgeInsets.symmetric(horizontal: 10.0, vertical: 10.0),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(5.0),
-                ),
-                filled: true,
-                fillColor: widget.widgetParams!.phoneFieldColor,
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(nsgtheme.borderRadius),
-                  borderSide: BorderSide(color: nsgtheme.colorText.withOpacity(0.5), width: 1.0),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(nsgtheme.borderRadius),
-                  borderSide: const BorderSide(color: Colors.black, width: 1.0),
-                ),
-                errorStyle: const TextStyle(fontSize: 12),
+              decoration: decor.copyWith(
                 hintText: widget.widgetParams!.textEnterCaptcha,
-                hintStyle: TextStyle(color: nsgtheme.colorText.withOpacity(0.3)),
               ),
               style: widget.widgetParams!.textPhoneField,
               textCapitalization: TextCapitalization.characters,
@@ -703,6 +700,7 @@ class LoginWidgetState extends State<LoginWidget> {
             children: [
               Expanded(
                   child: NsgCheckBox(
+                margin: EdgeInsets.zero,
                 key: GlobalKey(),
                 radio: true,
                 label: widget.widgetParams!.textEnterPhone,
@@ -715,6 +713,7 @@ class LoginWidgetState extends State<LoginWidget> {
               )),
               Expanded(
                   child: NsgCheckBox(
+                      margin: EdgeInsets.zero,
                       key: GlobalKey(),
                       radio: true,
                       label: widget.widgetParams!.textEnterEmail,
@@ -739,24 +738,14 @@ class LoginWidgetState extends State<LoginWidget> {
               // style: widget.widgetParams!.textPhoneField,
               style: TextStyle(color: nsgtheme.colorText),
               textAlign: TextAlign.center,
-              decoration: InputDecoration(
-                contentPadding: const EdgeInsets.only(left: 10, top: 10, right: 10),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(nsgtheme.borderRadius),
-                ),
-                filled: true,
-                fillColor: widget.widgetParams!.phoneFieldColor,
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(nsgtheme.borderRadius),
-                  borderSide: BorderSide(color: nsgtheme.colorText, width: 1.0),
-                ),
-                errorStyle: const TextStyle(fontSize: 12),
-                hintText: loginType == NsgLoginType.phone ? widget.widgetParams!.textEnterPhone : widget.widgetParams!.textEnterEmail,
-                hintStyle: TextStyle(color: nsgtheme.colorText.withOpacity(0.3)),
+              decoration: decor.copyWith(
+                hintText: widget.widgetParams!.textEnterPhone,
               ),
+
               initialValue: phoneNumber,
               onChanged: (value) => phoneNumber = value,
-              validator: (value) => isPhoneValid(value!) && value.length >= 9 ? null : widget.widgetParams!.textEnterCorrectPhone,
+              validator: (value) =>
+                  isPhoneValid(value!) && value.length >= 9 ? null : widget.widgetParams!.textEnterCorrectPhone,
             ),
           ),
       if (widget.widgetParams!.useEmailLogin)
@@ -770,20 +759,8 @@ class LoginWidgetState extends State<LoginWidget> {
               inputFormatters: null,
               style: TextStyle(color: nsgtheme.colorText),
               textAlign: TextAlign.center,
-              decoration: InputDecoration(
-                contentPadding: const EdgeInsets.only(left: 10, top: 10, right: 10),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(nsgtheme.borderRadius),
-                ),
-                filled: true,
-                fillColor: widget.widgetParams!.phoneFieldColor,
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(nsgtheme.borderRadius),
-                  borderSide: BorderSide(color: nsgtheme.colorText, width: 1.0),
-                ),
-                errorStyle: const TextStyle(fontSize: 12),
-                hintText: loginType == NsgLoginType.phone ? widget.widgetParams!.textEnterPhone : widget.widgetParams!.textEnterEmail,
-                hintStyle: TextStyle(color: nsgtheme.colorText.withOpacity(0.3)),
+              decoration: decor.copyWith(
+                hintText: widget.widgetParams!.textEnterEmail,
               ),
               initialValue: email,
               onChanged: (value) => email = value,
@@ -864,20 +841,8 @@ class LoginWidgetState extends State<LoginWidget> {
         inputFormatters: null,
         style: TextStyle(color: nsgtheme.colorText),
         textAlign: TextAlign.center,
-        decoration: InputDecoration(
-          contentPadding: const EdgeInsets.only(left: 10, top: 10, right: 10),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(nsgtheme.borderRadius),
-          ),
-          filled: true,
-          fillColor: widget.widgetParams!.phoneFieldColor,
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(nsgtheme.borderRadius),
-            borderSide: BorderSide(color: nsgtheme.colorText, width: 1.0),
-          ),
-          errorStyle: const TextStyle(fontSize: 12),
+        decoration: decor.copyWith(
           hintText: hintText,
-          hintStyle: TextStyle(color: nsgtheme.colorText.withOpacity(0.3)),
         ),
         initialValue: initialValue,
         onChanged: onChanged,
@@ -891,10 +856,15 @@ class LoginWidgetState extends State<LoginWidget> {
   ///securityCode - код верификации, полученный на предыдущем этапе
   ///loginType - тип логина (телефон/емаил)
   ///newPassword - новый (устанавливаемый) пароль
-  Future setNewPassword(BuildContext context, {required String securityCode, required NsgLoginType loginType, required String newPassword}) async {
+  Future setNewPassword(BuildContext context,
+      {required String securityCode, required NsgLoginType loginType, required String newPassword}) async {
     if (!_formKey.currentState!.validate()) return;
     widget.provider
-        .phoneLogin(phoneNumber: loginType == NsgLoginType.phone ? phoneNumber : email, securityCode: securityCode, register: true, newPassword: newPassword)
+        .phoneLogin(
+            phoneNumber: loginType == NsgLoginType.phone ? phoneNumber : email,
+            securityCode: securityCode,
+            register: true,
+            newPassword: newPassword)
         .then((value) => checkRequestNewPasswordanswer(context, value))
         .catchError((e) {
       widget.widgetParams!.showError(context, widget.widgetParams!.textCheckInternet);
