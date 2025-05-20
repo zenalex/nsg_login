@@ -407,7 +407,7 @@ class LoginWidgetState extends State<LoginWidget> {
 
     if (widget.widgetParams!.usePasswordLogin) {
       //Регистрация нового пользователя/восстановление пароля по e-mail или вход по паролю
-      //Опраделяется наличием или отсутствием captchaCode
+      //Определяется наличием или отсутствием captchaCode
       widget.provider
           .phoneLoginPassword(
               phoneNumber: loginType == NsgLoginType.phone ? phoneNumber : email,
@@ -586,6 +586,9 @@ class LoginWidgetState extends State<LoginWidget> {
               decoration: decor.copyWith(
                 hintText: widget.widgetParams!.textEnterPassword,
               ),
+              onChanged: (value) {
+                password = value;
+              },
               validator: (value) => value == null || value.length < 1 ? 'Password is required' : null),
         ),
       if (kIsWeb || (!Platform.isAndroid && !Platform.isIOS))
