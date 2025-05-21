@@ -150,10 +150,10 @@ class LoginWidgetState extends State<LoginWidget> {
         hintStyle: TextStyle(color: nsgtheme.colorText.withOpacity(0.3)));
     widget.loginPage.callback.sendDataPressed =
         () => doSmsRequest(Get.context!, loginType: loginType, password: password, firebaseToken: firebaseToken);
-    if (widget.widgetParams!.usePhoneLogin) {
-      loginType = NsgLoginType.phone;
-    } else {
+    if (widget.widgetParams!.useEmailLogin) {
       loginType = NsgLoginType.email;
+    } else {
+      loginType = NsgLoginType.phone;
     }
     refreshCaptcha();
   }
@@ -393,7 +393,7 @@ class LoginWidgetState extends State<LoginWidget> {
 
   ///Запросить код проверки в виде СМС или t-mail в зависимости от loginType
   void doSmsRequest(BuildContext context,
-      {NsgLoginType loginType = NsgLoginType.phone, String? password, required String firebaseToken}) {
+      {NsgLoginType loginType = NsgLoginType.email, String? password, required String firebaseToken}) {
     if (!_formKey.currentState!.validate()) return;
 
     NsgMetrica.reportLoginStart(loginType.toString());
@@ -514,6 +514,18 @@ class LoginWidgetState extends State<LoginWidget> {
             children: [
               Expanded(
                   child: NsgCheckBox(
+                      margin: EdgeInsets.zero,
+                      key: GlobalKey(),
+                      radio: true,
+                      label: widget.widgetParams!.textEnterEmail,
+                      onPressed: (bool currentValue) {
+                        setState(() {
+                          loginType = NsgLoginType.email;
+                        });
+                      },
+                      value: loginType == NsgLoginType.email)),
+              Expanded(
+                  child: NsgCheckBox(
                 margin: EdgeInsets.zero,
                 key: GlobalKey(),
                 radio: true,
@@ -525,18 +537,6 @@ class LoginWidgetState extends State<LoginWidget> {
                 },
                 value: loginType == NsgLoginType.phone,
               )),
-              Expanded(
-                  child: NsgCheckBox(
-                      margin: EdgeInsets.zero,
-                      key: GlobalKey(),
-                      radio: true,
-                      label: widget.widgetParams!.textEnterEmail,
-                      onPressed: (bool currentValue) {
-                        setState(() {
-                          loginType = NsgLoginType.email;
-                        });
-                      },
-                      value: loginType == NsgLoginType.email)),
             ],
           ),
         ),
@@ -703,6 +703,18 @@ class LoginWidgetState extends State<LoginWidget> {
             children: [
               Expanded(
                   child: NsgCheckBox(
+                      margin: EdgeInsets.zero,
+                      key: GlobalKey(),
+                      radio: true,
+                      label: widget.widgetParams!.textEnterEmail,
+                      onPressed: (bool currentValue) {
+                        setState(() {
+                          loginType = NsgLoginType.email;
+                        });
+                      },
+                      value: loginType == NsgLoginType.email)),
+              Expanded(
+                  child: NsgCheckBox(
                 margin: EdgeInsets.zero,
                 key: GlobalKey(),
                 radio: true,
@@ -714,18 +726,6 @@ class LoginWidgetState extends State<LoginWidget> {
                 },
                 value: loginType == NsgLoginType.phone,
               )),
-              Expanded(
-                  child: NsgCheckBox(
-                      margin: EdgeInsets.zero,
-                      key: GlobalKey(),
-                      radio: true,
-                      label: widget.widgetParams!.textEnterEmail,
-                      onPressed: (bool currentValue) {
-                        setState(() {
-                          loginType = NsgLoginType.email;
-                        });
-                      },
-                      value: loginType == NsgLoginType.email)),
             ],
           ),
         ),
