@@ -861,7 +861,10 @@ class LoginWidgetState extends State<LoginWidget> {
         ),
         initialValue: initialValue,
         onChanged: onChanged,
-        validator: validator,
+        validator: (value) {
+          if (value != newPassword2) return null;
+          if (validator != null) return validator(value);
+        },
         obscureText: obscureText,
       ),
     );
