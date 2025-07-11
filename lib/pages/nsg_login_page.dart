@@ -13,6 +13,8 @@ import 'package:nsg_data/authorize/nsg_login_model.dart';
 import 'package:nsg_data/authorize/nsg_login_params.dart';
 import 'package:nsg_data/authorize/nsg_login_response.dart';
 import 'package:nsg_data/nsg_data.dart';
+import 'package:nsg_login/nsg_login_password_strength.dart';
+import 'package:nsg_login/nsg_login_password_validator.dart';
 import 'package:nsg_login/pages/nsg_login_state.dart';
 
 class NsgLoginPage extends StatelessWidget {
@@ -785,6 +787,7 @@ class LoginWidgetState extends State<LoginWidget> {
   ///Виджет ввода кода верификации
   ///при использовании варианта авторизации по паролю, установка нового пароля пользователя
   List<Widget> _verificationStateWidget() {
+    ValueNotifier<PasswordStrength?> passwordListener = ValueNotifier(null);
     return [
       Padding(
           padding: const EdgeInsets.only(bottom: 10),
@@ -805,8 +808,11 @@ class LoginWidgetState extends State<LoginWidget> {
             hintText: widget.widgetParams!.textEnterNewPassword,
             initialValue: newPassword1,
             obscureText: true,
-            onChanged: (value) => newPassword1 = value,
-            validator: (value) => value == newPassword2 ? null : 'Passwords mistmatch'),
+            onChanged: (value) {
+              passwordListener.value = checkPasswordStrength(value);
+              newPassword1 = value;
+            },
+            validator: checkPassword),
       if (widget.widgetParams!.usePasswordLogin)
         _getInput(
             hintText: widget.widgetParams!.textEnterPasswordAgain,
@@ -814,6 +820,14 @@ class LoginWidgetState extends State<LoginWidget> {
             obscureText: true,
             onChanged: (value) => newPassword2 = value,
             validator: (value) => value == newPassword1 ? null : 'Passwords mistmatch'),
+      const SizedBox(height: 5),
+      if (widget.widgetParams!.usePasswordLogin)
+        _getIndicator(
+          listener: passwordListener,
+          colors: passwordStrengthColors,
+          values: PasswordStrength.values,
+          messages: passwordStrengthMessages
+        ),
       const SizedBox(height: 15),
 
       /// CONFIRM кнопка
@@ -854,6 +868,51 @@ class LoginWidgetState extends State<LoginWidget> {
       ),
     );
   }
+
+  Widget _getIndicator<T>({
+    required ValueNotifier listener,
+    required Iterable<T> values,
+    required Iterable<Color> colors,
+    required Iterable<String> messages,
+  }) {
+    return ListenableBuilder(
+      listenable: listener,
+      builder: (BuildContext context, Widget? child) {
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 10),
+          child: Column(
+            children: [
+              Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(5),
+                  color: (() {
+                    for (int i = 0; i < values.length; i++) {
+                      if (values.elementAt(i) == listener.value) return colors.elementAt(i);
+                    }
+                    return Colors.transparent;
+                  })(),
+                ),
+                child: SizedBox(
+                  width: double.infinity,
+                  height: 5,
+                  child: child,
+                ),
+              ),
+              const SizedBox(height: 5),
+              Text((() {
+                for (int i = 0; i < values.length; i++) {
+                  if (values.elementAt(i) == listener.value) return messages.elementAt(i);
+                }
+                return '';
+              })())
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  // Widget _getPassword complexity indicator
 
   ///Установить новый пароль пользователя
   ///securityCode - код верификации, полученный на предыдущем этапе
