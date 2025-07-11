@@ -13,8 +13,7 @@ import 'package:nsg_data/authorize/nsg_login_model.dart';
 import 'package:nsg_data/authorize/nsg_login_params.dart';
 import 'package:nsg_data/authorize/nsg_login_response.dart';
 import 'package:nsg_data/nsg_data.dart';
-import 'package:nsg_login/nsg_login_password_strength.dart';
-import 'package:nsg_login/nsg_login_password_validator.dart';
+import 'package:nsg_data/password/nsg_login_password_strength.dart';
 import 'package:nsg_login/pages/nsg_login_state.dart';
 
 class NsgLoginPage extends StatelessWidget {
@@ -95,9 +94,9 @@ class LoginWidget extends StatefulWidget {
   LoginWidgetState createState() => LoginWidgetState();
 
   final NsgLoginPage loginPage;
-  final NsgLoginParams? widgetParams;
+  final NsgLoginParams widgetParams;
   final NsgDataProvider provider;
-  const LoginWidget(this.loginPage, this.provider, {super.key, this.widgetParams});
+  const LoginWidget(this.loginPage, this.provider, {super.key, required this.widgetParams});
 }
 
 class LoginWidgetState extends State<LoginWidget> {
@@ -147,12 +146,12 @@ class LoginWidgetState extends State<LoginWidget> {
           borderSide: BorderSide(color: nsgtheme.colorText, width: 1.0),
         ),
         filled: true,
-        fillColor: widget.widgetParams!.phoneFieldColor,
+        fillColor: widget.widgetParams.phoneFieldColor,
         errorStyle: const TextStyle(fontSize: 12),
         hintStyle: TextStyle(color: nsgtheme.colorText.withOpacity(0.3)));
     widget.loginPage.callback.sendDataPressed =
         () => doSmsRequest(Get.context!, loginType: loginType, password: password, firebaseToken: firebaseToken);
-    if (widget.widgetParams!.useEmailLogin) {
+    if (widget.widgetParams.useEmailLogin) {
       loginType = NsgLoginType.email;
     } else {
       loginType = NsgLoginType.phone;
@@ -206,12 +205,7 @@ class LoginWidgetState extends State<LoginWidget> {
   Widget _getContext(BuildContext context) {
     if (isLoginSuccessfull) {
       Future.delayed(const Duration(milliseconds: 10)).then((e) {
-        if (widget.widgetParams != null) {
-          NsgNavigator.instance.offAndToPage(widget.widgetParams!.mainPage);
-        } else {
-          NsgNavigator.pop();
-        }
-
+        NsgNavigator.instance.offAndToPage(widget.widgetParams.mainPage);
         return getContextSuccessful(context);
       });
     }
@@ -227,7 +221,7 @@ class LoginWidgetState extends State<LoginWidget> {
               decoration: BoxDecoration(
                   color: nsgtheme.colorMainBack, borderRadius: const BorderRadius.all(Radius.circular(10))),
               padding: const EdgeInsets.all(15.0),
-              width: widget.widgetParams!.cardSize,
+              width: widget.widgetParams.cardSize,
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.center,
@@ -237,11 +231,11 @@ class LoginWidgetState extends State<LoginWidget> {
                       mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: <Widget>[
-                        widget.widgetParams!.headerMessageVisible == true
+                        widget.widgetParams.headerMessageVisible == true
                             ? Padding(
                                 padding: const EdgeInsets.only(bottom: 10),
                                 child: Text(
-                                  widget.widgetParams!.headerMessage,
+                                  widget.widgetParams.headerMessage,
                                   style: TextStyle(color: nsgtheme.colorText),
                                   textAlign: TextAlign.center,
                                 ),
@@ -249,7 +243,7 @@ class LoginWidgetState extends State<LoginWidget> {
                             : const SizedBox(),
                         //Кнопки LOGIN, REGISTRATION
                         //Для этапа ввода нового пароля отключаем их
-                        if (widget.widgetParams!.usePasswordLogin && currentState != NsgLoginState.verification)
+                        if (widget.widgetParams.usePasswordLogin && currentState != NsgLoginState.verification)
                           ClipRRect(
                             borderRadius: BorderRadius.circular(10),
                             child: Row(mainAxisSize: MainAxisSize.min, children: [
@@ -266,7 +260,7 @@ class LoginWidgetState extends State<LoginWidget> {
                                     currentState = NsgLoginState.login;
                                     setState(() {});
                                   },
-                                  text: widget.widgetParams!.headerMessageLogin.toUpperCase(),
+                                  text: widget.widgetParams.headerMessageLogin.toUpperCase(),
                                 ),
                               ),
 
@@ -283,13 +277,13 @@ class LoginWidgetState extends State<LoginWidget> {
                                     currentState = NsgLoginState.registration;
                                     setState(() {});
                                   },
-                                  text: widget.widgetParams!.headerMessageRegistration.toUpperCase(),
+                                  text: widget.widgetParams.headerMessageRegistration.toUpperCase(),
                                 ),
                               ),
 
                               //    Text(
-                              //   widget.widgetParams!.headerMessageLogin,
-                              //   style: widget.widgetParams!.headerMessageStyle,
+                              //   widget.widgetParams.headerMessageLogin,
+                              //   style: widget.widgetParams.headerMessageStyle,
                               //   textAlign: TextAlign.center,
                               // ),
                             ]),
@@ -304,11 +298,11 @@ class LoginWidgetState extends State<LoginWidget> {
                 ],
               ),
             ),
-            if (widget.widgetParams!.onClose != null)
+            if (widget.widgetParams.onClose != null)
               InkWell(
                 onTap: () {
                   NsgNavigator.pop();
-                  widget.widgetParams!.onClose!;
+                  widget.widgetParams.onClose!;
                 },
                 child: Padding(
                   padding: const EdgeInsets.all(5.0),
@@ -327,7 +321,7 @@ class LoginWidgetState extends State<LoginWidget> {
 
   Widget? getcaptchaImage() {
     if (captureImage == null || isCaptchaLoading) {
-      return Icon(Icons.hourglass_empty, color: widget.widgetParams!.textColor, size: 40.0);
+      return Icon(Icons.hourglass_empty, color: widget.widgetParams.textColor, size: 40.0);
     }
     return captureImage;
   }
@@ -351,7 +345,7 @@ class LoginWidgetState extends State<LoginWidget> {
     //0 - успешно, 40201 - смс отправлено ранее. И в том и другом случае, переходим на экран ввода кода подтверждения
     if ((answerCode.errorCode == 0 || answerCode.errorCode == 40201) &&
         (currentState == NsgLoginState.registration || currentState == NsgLoginState.login)) {
-      if (currentState == NsgLoginState.registration || !widget.widgetParams!.usePasswordLogin) {
+      if (currentState == NsgLoginState.registration || !widget.widgetParams.usePasswordLogin) {
         currentState = NsgLoginState.verification;
       } else {
         isLoginSuccessfull = true;
@@ -359,22 +353,22 @@ class LoginWidgetState extends State<LoginWidget> {
       setState(() {});
       //Если мы перешли на экран с ошибкой смс уже отправлено, выводим ошибку на экран после перехода на страницу подтверждения
       if (answerCode.errorCode != 0) {
-        var errorMessage = widget.widgetParams!.errorMessageByStatusCode!(answerCode.errorCode);
-        widget.widgetParams!.showError(context, errorMessage);
+        var errorMessage = widget.widgetParams.errorMessageByStatusCode!(answerCode.errorCode);
+        widget.widgetParams.showError(context, errorMessage);
       }
       return;
     }
-    if (answerCode.errorCode == 0 && widget.widgetParams!.usePasswordLogin) {
+    if (answerCode.errorCode == 0 && widget.widgetParams.usePasswordLogin) {
       NsgMetrica.reportLoginSuccess('Phone');
-      NsgNavigator.instance.offAndToPage(widget.widgetParams!.mainPage);
+      NsgNavigator.instance.offAndToPage(widget.widgetParams.mainPage);
       return;
     }
-    if (answerCode.errorCode == 0 && !widget.widgetParams!.usePasswordLogin) {
+    if (answerCode.errorCode == 0 && !widget.widgetParams.usePasswordLogin) {
       gotoNextPage(context);
       return;
     }
     var needRefreshCaptcha = false;
-    var errorMessage = widget.widgetParams!.errorMessageByStatusCode!(answerCode.errorCode);
+    var errorMessage = widget.widgetParams.errorMessageByStatusCode!(answerCode.errorCode);
     switch (answerCode.errorCode) {
       case 40102:
         needRefreshCaptcha = true;
@@ -386,7 +380,7 @@ class LoginWidgetState extends State<LoginWidget> {
         needRefreshCaptcha = false;
     }
     NsgMetrica.reportLoginFailed('Phone', answerCode.toString());
-    widget.widgetParams!.showError(context, errorMessage);
+    widget.widgetParams.showError(context, errorMessage);
 
     if (needRefreshCaptcha) {
       refreshCaptcha();
@@ -407,7 +401,7 @@ class LoginWidgetState extends State<LoginWidget> {
       captchaCode = '';
     }
 
-    if (widget.widgetParams!.usePasswordLogin) {
+    if (widget.widgetParams.usePasswordLogin) {
       //Регистрация нового пользователя/восстановление пароля по e-mail или вход по паролю
       //Определяется наличием или отсутствием captchaCode
       widget.provider
@@ -417,7 +411,7 @@ class LoginWidgetState extends State<LoginWidget> {
               loginType: loginType)
           .then((value) => checkRequestSMSanswer(context, value))
           .catchError((e) {
-        widget.widgetParams!.showError(context, widget.widgetParams!.textCheckInternet);
+        widget.widgetParams.showError(context, widget.widgetParams.textCheckInternet);
       });
     } else {
       widget.provider
@@ -428,14 +422,14 @@ class LoginWidgetState extends State<LoginWidget> {
               firebaseToken: firebaseToken)
           .then((value) => checkRequestSMSanswer(context, value))
           .catchError((e) {
-        widget.widgetParams!.showError(context, widget.widgetParams!.textCheckInternet);
+        widget.widgetParams.showError(context, widget.widgetParams.textCheckInternet);
       });
     }
   }
 
   void refreshCaptcha() {
     isCaptchaLoading = true;
-    if (!widget.widgetParams!.useCaptcha) return;
+    if (!widget.widgetParams.useCaptcha) return;
     _loadCaptureImage().then((value) => setState(() {
           captureImage = value;
           _captchaController!.value = TextEditingValue.empty;
@@ -469,9 +463,9 @@ class LoginWidgetState extends State<LoginWidget> {
     //   setState(() {
     //     isLoginSuccessfull = true;
     //   });
-    //   if (widget.widgetParams!.loginSuccessful != null) {
-    //     widget.widgetParams!.loginSuccessful!(
-    //         context, widget.widgetParams!.parameter);
+    //   if (widget.widgetParams.loginSuccessful != null) {
+    //     widget.widgetParams.loginSuccessful!(
+    //         context, widget.widgetParams.parameter);
     //   }
     // } else {
     //   refreshCaptcha();
@@ -482,7 +476,7 @@ class LoginWidgetState extends State<LoginWidget> {
     return Center(
       child: Card(
           margin: const EdgeInsets.symmetric(horizontal: 15.0),
-          color: widget.widgetParams!.cardColor,
+          color: widget.widgetParams.cardColor,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(10.0),
           ),
@@ -498,8 +492,8 @@ class LoginWidgetState extends State<LoginWidget> {
                             crossAxisAlignment: CrossAxisAlignment.center,
                             children: <Widget>[
                           Text(
-                            widget.widgetParams!.textLoginSuccessful,
-                            style: widget.widgetParams!.headerMessageStyle,
+                            widget.widgetParams.textLoginSuccessful,
+                            style: widget.widgetParams.headerMessageStyle,
                           )
                         ]))
                   ]))),
@@ -509,7 +503,7 @@ class LoginWidgetState extends State<LoginWidget> {
   ///Элементы управления для состояния login
   List<Widget> _loginStateWidget() {
     return [
-      if (widget.widgetParams!.useEmailLogin && widget.widgetParams!.usePhoneLogin)
+      if (widget.widgetParams.useEmailLogin && widget.widgetParams.usePhoneLogin)
         Padding(
           padding: const EdgeInsets.only(bottom: 5, top: 5),
           child: Row(
@@ -519,7 +513,7 @@ class LoginWidgetState extends State<LoginWidget> {
                       margin: EdgeInsets.zero,
                       key: GlobalKey(),
                       radio: true,
-                      label: widget.widgetParams!.textEnterEmail,
+                      label: widget.widgetParams.textEnterEmail,
                       onPressed: (bool currentValue) {
                         setState(() {
                           loginType = NsgLoginType.email;
@@ -531,7 +525,7 @@ class LoginWidgetState extends State<LoginWidget> {
                 margin: EdgeInsets.zero,
                 key: GlobalKey(),
                 radio: true,
-                label: widget.widgetParams!.textEnterPhone,
+                label: widget.widgetParams.textEnterPhone,
                 onPressed: (bool currentValue) {
                   setState(() {
                     loginType = NsgLoginType.phone;
@@ -542,7 +536,7 @@ class LoginWidgetState extends State<LoginWidget> {
             ],
           ),
         ),
-      if (widget.widgetParams!.usePhoneLogin)
+      if (widget.widgetParams.usePhoneLogin)
         if (loginType == NsgLoginType.phone)
           TextFormField(
             key: GlobalKey(),
@@ -552,13 +546,13 @@ class LoginWidgetState extends State<LoginWidget> {
             style: TextStyle(color: nsgtheme.colorText),
             textAlign: TextAlign.center,
             decoration: decor.copyWith(
-              hintText: widget.widgetParams!.textEnterPhone,
+              hintText: widget.widgetParams.textEnterPhone,
             ),
             initialValue: phoneNumber,
             onChanged: (value) => phoneNumber = value,
-            validator: (value) => isPhoneValid(value!) ? null : widget.widgetParams!.textEnterCorrectPhone,
+            validator: (value) => isPhoneValid(value!) ? null : widget.widgetParams.textEnterCorrectPhone,
           ),
-      if (widget.widgetParams!.useEmailLogin)
+      if (widget.widgetParams.useEmailLogin)
         if (loginType == NsgLoginType.email)
           TextFormField(
             key: GlobalKey(),
@@ -568,13 +562,13 @@ class LoginWidgetState extends State<LoginWidget> {
             style: TextStyle(color: nsgtheme.colorText),
             textAlign: TextAlign.center,
             decoration: decor.copyWith(
-              hintText: widget.widgetParams!.textEnterEmail,
+              hintText: widget.widgetParams.textEnterEmail,
             ),
             initialValue: email,
             onChanged: (value) => email = value,
             validator: (value) => null,
           ),
-      if (widget.widgetParams!.usePasswordLogin)
+      if (widget.widgetParams.usePasswordLogin)
         Padding(
           padding: const EdgeInsets.only(top: 10),
           child: TextFormField(
@@ -586,7 +580,7 @@ class LoginWidgetState extends State<LoginWidget> {
               style: TextStyle(color: nsgtheme.colorText),
               textAlign: TextAlign.center,
               decoration: decor.copyWith(
-                hintText: widget.widgetParams!.textEnterPassword,
+                hintText: widget.widgetParams.textEnterPassword,
               ),
               onChanged: (value) {
                 password = value;
@@ -597,7 +591,7 @@ class LoginWidgetState extends State<LoginWidget> {
         widget.loginPage.getRememberMeCheckbox()
       else
         const SizedBox(height: 10),
-      if (widget.widgetParams!.useCaptcha)
+      if (widget.widgetParams.useCaptcha)
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -616,8 +610,8 @@ class LoginWidgetState extends State<LoginWidget> {
                         padding: const EdgeInsets.fromLTRB(0, 0, 0, 20),
                         icon: Icon(
                           Icons.cached,
-                          color: widget.widgetParams!.phoneIconColor,
-                          size: widget.widgetParams!.buttonSize,
+                          color: widget.widgetParams.phoneIconColor,
+                          size: widget.widgetParams.buttonSize,
                         ),
                         onPressed: () {
                           refreshCaptcha();
@@ -637,10 +631,10 @@ class LoginWidgetState extends State<LoginWidget> {
             ),
           ],
         ),
-      if (widget.widgetParams!.useCaptcha)
+      if (widget.widgetParams.useCaptcha)
         Container(
           decoration: const BoxDecoration(
-              //color: widget.widgetParams!.phoneFieldColor,
+              //color: widget.widgetParams.phoneFieldColor,
               //borderRadius: BorderRadius.circular(5.0),
               ),
           child: Padding(
@@ -651,25 +645,25 @@ class LoginWidgetState extends State<LoginWidget> {
               controller: _captchaController,
               textAlign: TextAlign.center,
               decoration: decor.copyWith(
-                hintText: widget.widgetParams!.textEnterCaptcha,
+                hintText: widget.widgetParams.textEnterCaptcha,
               ),
-              style: widget.widgetParams!.textPhoneField,
+              style: widget.widgetParams.textPhoneField,
               textCapitalization: TextCapitalization.characters,
               onChanged: (value) => captchaCode = value,
-              validator: (value) => captchaCode.length == 6 ? null : widget.widgetParams!.textEnterCaptcha,
+              validator: (value) => captchaCode.length == 6 ? null : widget.widgetParams.textEnterCaptcha,
             ),
           ),
         ),
       NsgButton(
         margin: const EdgeInsets.only(top: 10),
         onPressed: () {
-          widget.widgetParams!.phoneNumber = phoneNumber;
-          widget.widgetParams!.loginType = loginType;
+          widget.widgetParams.phoneNumber = phoneNumber;
+          widget.widgetParams.loginType = loginType;
           doSmsRequest(Get.context!, loginType: loginType, password: password, firebaseToken: firebaseToken);
         },
-        text: widget.widgetParams!.headerMessageLogin.toUpperCase(),
+        text: widget.widgetParams.headerMessageLogin.toUpperCase(),
       ),
-      if (widget.widgetParams!.usePasswordLogin)
+      if (widget.widgetParams.usePasswordLogin)
         Padding(
           padding: const EdgeInsets.only(top: 10),
           child: InkWell(
@@ -681,12 +675,12 @@ class LoginWidgetState extends State<LoginWidget> {
               padding: const EdgeInsets.only(top: 10, bottom: 10),
               child: HoverWidget(
                 hoverChild: Text(
-                  widget.widgetParams!.textRegistration,
+                  widget.widgetParams.textRegistration,
                   style: const TextStyle(),
                 ),
                 onHover: (PointerEnterEvent event) {},
                 child: Text(
-                  widget.widgetParams!.textRegistration,
+                  widget.widgetParams.textRegistration,
                   style: const TextStyle(decoration: TextDecoration.underline),
                 ),
               ),
@@ -698,7 +692,7 @@ class LoginWidgetState extends State<LoginWidget> {
 
   List<Widget> _registrationStateWidget() {
     return [
-      if (widget.widgetParams!.usePhoneLogin && widget.widgetParams!.useEmailLogin)
+      if (widget.widgetParams.usePhoneLogin && widget.widgetParams.useEmailLogin)
         Padding(
           padding: const EdgeInsets.only(bottom: 5, top: 5),
           child: Row(
@@ -708,7 +702,7 @@ class LoginWidgetState extends State<LoginWidget> {
                       margin: EdgeInsets.zero,
                       key: GlobalKey(),
                       radio: true,
-                      label: widget.widgetParams!.textEnterEmail,
+                      label: widget.widgetParams.textEnterEmail,
                       onPressed: (bool currentValue) {
                         setState(() {
                           loginType = NsgLoginType.email;
@@ -720,7 +714,7 @@ class LoginWidgetState extends State<LoginWidget> {
                 margin: EdgeInsets.zero,
                 key: GlobalKey(),
                 radio: true,
-                label: widget.widgetParams!.textEnterPhone,
+                label: widget.widgetParams.textEnterPhone,
                 onPressed: (bool currentValue) {
                   setState(() {
                     loginType = NsgLoginType.phone;
@@ -731,7 +725,7 @@ class LoginWidgetState extends State<LoginWidget> {
             ],
           ),
         ),
-      if (widget.widgetParams!.usePhoneLogin)
+      if (widget.widgetParams.usePhoneLogin)
         if (loginType == NsgLoginType.phone)
           Padding(
             padding: const EdgeInsets.only(bottom: 10),
@@ -740,20 +734,20 @@ class LoginWidgetState extends State<LoginWidget> {
               cursorColor: Theme.of(context).primaryColor,
               keyboardType: TextInputType.phone,
               inputFormatters: [phoneFormatter],
-              // style: widget.widgetParams!.textPhoneField,
+              // style: widget.widgetParams.textPhoneField,
               style: TextStyle(color: nsgtheme.colorText),
               textAlign: TextAlign.center,
               decoration: decor.copyWith(
-                hintText: widget.widgetParams!.textEnterPhone,
+                hintText: widget.widgetParams.textEnterPhone,
               ),
 
               initialValue: phoneNumber,
               onChanged: (value) => phoneNumber = value,
               validator: (value) =>
-                  isPhoneValid(value!) && value.length >= 9 ? null : widget.widgetParams!.textEnterCorrectPhone,
+                  isPhoneValid(value!) && value.length >= 9 ? null : widget.widgetParams.textEnterCorrectPhone,
             ),
           ),
-      if (widget.widgetParams!.useEmailLogin)
+      if (widget.widgetParams.useEmailLogin)
         if (loginType == NsgLoginType.email)
           Padding(
             padding: const EdgeInsets.only(bottom: 10),
@@ -765,7 +759,7 @@ class LoginWidgetState extends State<LoginWidget> {
               style: TextStyle(color: nsgtheme.colorText),
               textAlign: TextAlign.center,
               decoration: decor.copyWith(
-                hintText: widget.widgetParams!.textEnterEmail,
+                hintText: widget.widgetParams.textEnterEmail,
               ),
               initialValue: email,
               onChanged: (value) => email = value,
@@ -787,43 +781,46 @@ class LoginWidgetState extends State<LoginWidget> {
   ///Виджет ввода кода верификации
   ///при использовании варианта авторизации по паролю, установка нового пароля пользователя
   List<Widget> _verificationStateWidget() {
-    ValueNotifier<PasswordStrength?> passwordListener = ValueNotifier(null);
+    ValueNotifier<PasswordStrength?>? passwordListener;
+    if (widget.widgetParams.passwordIndicator != null) passwordListener = ValueNotifier(null);
     return [
       Padding(
           padding: const EdgeInsets.only(bottom: 10),
           child: Text(
-            widget.widgetParams!.headerMessageVerification,
-            style: widget.widgetParams!.headerMessageStyle,
+            widget.widgetParams.headerMessageVerification,
+            style: widget.widgetParams.headerMessageStyle,
             textAlign: TextAlign.center,
           )),
       _getInput(
-          hintText: widget.widgetParams!.textEnterCode,
+          hintText: widget.widgetParams.textEnterCode,
           initialValue: securityCode,
           autofillHints: [AutofillHints.oneTimeCode],
           keyboardType: TextInputType.number,
           onChanged: (value) => securityCode = value,
           validator: (value) => value == null || value.length < 6 ? 'Enter confirmation code from message' : null),
-      if (widget.widgetParams!.usePasswordLogin)
+      if (widget.widgetParams.usePasswordLogin)
         _getInput(
-            hintText: widget.widgetParams!.textEnterNewPassword,
+            hintText: widget.widgetParams.textEnterNewPassword,
             initialValue: newPassword1,
             obscureText: true,
             onChanged: (value) {
-              passwordListener.value = checkPasswordStrength(value);
+              if (widget.widgetParams.passwordIndicator != null) {
+                passwordListener!.value = widget.widgetParams.passwordIndicator!(value);
+              }
               newPassword1 = value;
             },
-            validator: checkPassword),
-      if (widget.widgetParams!.usePasswordLogin)
+            validator: widget.widgetParams.passwordValidator),
+      if (widget.widgetParams.usePasswordLogin)
         _getInput(
-            hintText: widget.widgetParams!.textEnterPasswordAgain,
+            hintText: widget.widgetParams.textEnterPasswordAgain,
             initialValue: newPassword2,
             obscureText: true,
             onChanged: (value) => newPassword2 = value,
             validator: (value) => value == newPassword1 ? null : 'Passwords mistmatch'),
       const SizedBox(height: 5),
-      if (widget.widgetParams!.usePasswordLogin)
+      if (widget.widgetParams.usePasswordLogin && widget.widgetParams.passwordIndicator != null)
         _getIndicator(
-          listener: passwordListener,
+          listener: passwordListener!,
           colors: passwordStrengthColors,
           values: PasswordStrength.values,
           messages: passwordStrengthMessages
@@ -929,7 +926,7 @@ class LoginWidgetState extends State<LoginWidget> {
             newPassword: newPassword)
         .then((value) => checkRequestNewPasswordanswer(context, value))
         .catchError((e) {
-      widget.widgetParams!.showError(context, widget.widgetParams!.textCheckInternet);
+      widget.widgetParams.showError(context, widget.widgetParams.textCheckInternet);
     });
   }
 
@@ -942,16 +939,16 @@ class LoginWidgetState extends State<LoginWidget> {
     //Код ноль - пароль установлен успешно, переходим на страницу приложения
     if (answerCode.errorCode == 0) {
       NsgMetrica.reportLoginSuccess('Phone');
-      if (widget.widgetParams!.eventLoginWidgweClosed != null) {
-        widget.widgetParams!.eventLoginWidgweClosed!(true);
+      if (widget.widgetParams.eventLoginWidgweClosed != null) {
+        widget.widgetParams.eventLoginWidgweClosed!(true);
       }
-      NsgNavigator.instance.offAndToPage(widget.widgetParams!.mainPage);
+      NsgNavigator.instance.offAndToPage(widget.widgetParams.mainPage);
       return;
     }
     //Если код ответа отличен от нуля - это ошибка, расшифровываем её и показываем пользователю
     //TODO: проверить остались ли еще попытки ввода кода подтверждения или требуется новый.
-    var errorMessage = widget.widgetParams!.errorMessageByStatusCode!(answerCode.errorCode);
+    var errorMessage = widget.widgetParams.errorMessageByStatusCode!(answerCode.errorCode);
     NsgMetrica.reportLoginFailed('Phone', answerCode.toString());
-    widget.widgetParams!.showError(context, errorMessage);
+    widget.widgetParams.showError(context, errorMessage);
   }
 }
