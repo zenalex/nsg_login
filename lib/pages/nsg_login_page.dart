@@ -818,7 +818,8 @@ class LoginWidgetState extends State<LoginWidget> {
             onChanged: (value) => newPassword2 = value,
             validator: (value) => value == newPassword1 ? null : 'Passwords mistmatch'),
       const SizedBox(height: 5),
-      if (widget.widgetParams.usePasswordLogin && widget.widgetParams.passwordIndicator != null)
+      if (widget.widgetParams.usePasswordLogin
+        && widget.widgetParams.passwordIndicator != null)
         _getIndicator(
           listener: passwordListener!,
           colors: passwordStrengthColors,
