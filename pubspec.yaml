@@ -22,14 +22,14 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  nsg_data: ^1.0.0
-  nsg_controls: ^1.0.0-beta.1
-  # nsg_data:
-  #   path:
-  #     ../nsg_data
-  # nsg_controls:
-  #   path:
-  #     ../nsg_controls
+  # nsg_data: ^1.0.0
+  # nsg_controls: ^1.0.0-beta.1
+  nsg_data:
+    path:
+      ../nsg_data
+  nsg_controls:
+    path:
+      ../nsg_controls
 
   get: ^5.0.0-beta.52
   hovering: ^1.0.4
