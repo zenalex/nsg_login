@@ -363,12 +363,18 @@ class _NsgLoginregistrationState extends State<NsgLoginRegistrationWidget> {
           loginType: loginType,
           firebaseToken: firebaseToken,
         )
-        .then((value) => checkRequestSMSanswer(context, value))
+        .then((value) {
+          if (mounted) {
+            checkRequestSMSanswer(context, value);
+          }
+        })
         .catchError((e) {
-          widget.widgetParams!.showError(
-            context,
-            widget.widgetParams!.textCheckInternet,
-          );
+          if (mounted) {
+            widget.widgetParams!.showError(
+              context,
+              widget.widgetParams!.textCheckInternet,
+            );
+          }
         });
   }
 

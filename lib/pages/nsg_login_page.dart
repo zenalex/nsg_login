@@ -210,8 +210,10 @@ class LoginWidgetState extends State<LoginWidget> {
   Widget _getContext(BuildContext context) {
     if (isLoginSuccessfull) {
       Future.delayed(const Duration(milliseconds: 10)).then((e) {
-        NsgNavigator.instance.offAndToPage(widget.widgetParams.mainPage);
-        return getContextSuccessful(context);
+        if (mounted) {
+          NsgNavigator.instance.offAndToPage(widget.widgetParams.mainPage);
+          return getContextSuccessful(context);
+        }
       });
     }
     _captchaController ??= TextEditingController();
@@ -450,12 +452,18 @@ class LoginWidgetState extends State<LoginWidget> {
             securityCode: captchaCode,
             loginType: loginType,
           )
-          .then((value) => checkRequestSMSanswer(context, value))
+          .then((value) {
+            if (mounted) {
+              checkRequestSMSanswer(context, value);
+            }
+          })
           .catchError((e) {
-            widget.widgetParams.showError(
-              context,
-              widget.widgetParams.textCheckInternet,
-            );
+            if (mounted) {
+              widget.widgetParams.showError(
+                context,
+                widget.widgetParams.textCheckInternet,
+              );
+            }
           });
     } else {
       widget.provider
@@ -465,12 +473,18 @@ class LoginWidgetState extends State<LoginWidget> {
             loginType: loginType,
             firebaseToken: firebaseToken,
           )
-          .then((value) => checkRequestSMSanswer(context, value))
+          .then((value) {
+            if (mounted) {
+              checkRequestSMSanswer(context, value);
+            }
+          })
           .catchError((e) {
-            widget.widgetParams.showError(
-              context,
-              widget.widgetParams.textCheckInternet,
-            );
+            if (mounted) {
+              widget.widgetParams.showError(
+                context,
+                widget.widgetParams.textCheckInternet,
+              );
+            }
           });
     }
   }
