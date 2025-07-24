@@ -8,23 +8,30 @@ import 'package:nsg_controls/nsg_controls.dart';
 import 'package:nsg_controls/widgets/nsg_snackbar.dart';
 import 'package:hovering/hovering.dart';
 import 'package:nsg_data/authorize/nsg_login_model.dart';
-import 'package:nsg_data/authorize/nsg_login_params.dart';
 import 'package:nsg_data/authorize/nsg_login_response.dart';
 import 'package:nsg_data/nsg_data.dart';
 
+import 'package:nsg_controls/nsg_login_params.dart';
+
 class NsgLoginRegistrationPage extends StatelessWidget {
   final NsgDataProvider provider;
+  final NsgLoginParams widgetParams;
 
-  const NsgLoginRegistrationPage(this.provider, {super.key});
+  const NsgLoginRegistrationPage(
+    this.provider, {
+    super.key,
+    required this.widgetParams,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: provider.widgetParams().appbar! ? getAppBar(context) : null,
+      appBar: widgetParams.appbar! ? getAppBar(context) : null,
       //backgroundColor: Colors.white,
       body: Container(
-          decoration: BoxDecoration(color: nsgtheme.colorMain.withOpacity(0.1)),
-          child: NsgLoginRegistrationWidget(this, provider)),
+        decoration: BoxDecoration(color: nsgtheme.colorMain.withAlpha(25)),
+        child: NsgLoginRegistrationWidget(this, provider),
+      ),
     );
   }
 
@@ -65,8 +72,12 @@ class NsgLoginRegistrationWidget extends StatefulWidget {
   final NsgDataProvider provider;
   final NsgLoginRegistrationPage registrationPage;
 
-  const NsgLoginRegistrationWidget(this.registrationPage, this.provider,
-      {super.key, this.widgetParams});
+  const NsgLoginRegistrationWidget(
+    this.registrationPage,
+    this.provider, {
+    super.key,
+    this.widgetParams,
+  });
   @override
   State<StatefulWidget> createState() => _NsgLoginregistrationState();
 }
@@ -108,9 +119,7 @@ class _NsgLoginregistrationState extends State<NsgLoginRegistrationWidget> {
   Widget _getBody(BuildContext context) {
     return Stack(
       children: <Widget>[
-        Positioned.fill(
-          child: widget.registrationPage.getBackground(),
-        ),
+        Positioned.fill(child: widget.registrationPage.getBackground()),
         Align(
           alignment: Alignment.center,
           child: SingleChildScrollView(
@@ -119,12 +128,8 @@ class _NsgLoginregistrationState extends State<NsgLoginRegistrationWidget> {
               crossAxisAlignment: CrossAxisAlignment.center,
               mainAxisSize: MainAxisSize.min,
               children: [
-                Container(
-                  child: widget.registrationPage.getLogo(),
-                ),
-                Container(
-                  child: _getContext(context),
-                ),
+                Container(child: widget.registrationPage.getLogo()),
+                Container(child: _getContext(context)),
               ],
             ),
           ),
@@ -141,8 +146,9 @@ class _NsgLoginregistrationState extends State<NsgLoginRegistrationWidget> {
       key: _formKey,
       child: Container(
         decoration: BoxDecoration(
-            color: nsgtheme.colorMainBack,
-            borderRadius: const BorderRadius.all(Radius.circular(3.0))),
+          color: nsgtheme.colorMainBack,
+          borderRadius: const BorderRadius.all(Radius.circular(3.0)),
+        ),
         margin: const EdgeInsets.symmetric(horizontal: 15.0, vertical: 5.0),
         padding: const EdgeInsets.all(15.0),
         width: widget.widgetParams!.cardSize,
@@ -180,28 +186,31 @@ class _NsgLoginregistrationState extends State<NsgLoginRegistrationWidget> {
                       child: Row(
                         children: [
                           Expanded(
-                              child: NsgCheckBox(
-                            key: GlobalKey(),
-                            radio: true,
-                            label: widget.widgetParams!.textEnterPhone,
-                            onPressed: (bool currentValue) {
-                              setState(() {
-                                loginType = NsgLoginType.phone;
-                              });
-                            },
-                            value: loginType == NsgLoginType.phone,
-                          )),
+                            child: NsgCheckBox(
+                              key: GlobalKey(),
+                              radio: true,
+                              label: widget.widgetParams!.textEnterPhone,
+                              onPressed: (bool currentValue) {
+                                setState(() {
+                                  loginType = NsgLoginType.phone;
+                                });
+                              },
+                              value: loginType == NsgLoginType.phone,
+                            ),
+                          ),
                           Expanded(
-                              child: NsgCheckBox(
-                                  key: GlobalKey(),
-                                  radio: true,
-                                  label: widget.widgetParams!.textEnterEmail,
-                                  onPressed: (bool currentValue) {
-                                    setState(() {
-                                      loginType = NsgLoginType.email;
-                                    });
-                                  },
-                                  value: loginType == NsgLoginType.email)),
+                            child: NsgCheckBox(
+                              key: GlobalKey(),
+                              radio: true,
+                              label: widget.widgetParams!.textEnterEmail,
+                              onPressed: (bool currentValue) {
+                                setState(() {
+                                  loginType = NsgLoginType.email;
+                                });
+                              },
+                              value: loginType == NsgLoginType.email,
+                            ),
+                          ),
                         ],
                       ),
                     ),
@@ -217,30 +226,38 @@ class _NsgLoginregistrationState extends State<NsgLoginRegistrationWidget> {
                         textAlign: TextAlign.center,
                         decoration: InputDecoration(
                           contentPadding: const EdgeInsets.only(
-                              left: 10, top: 10, right: 10),
+                            left: 10,
+                            top: 10,
+                            right: 10,
+                          ),
                           border: OutlineInputBorder(
-                            borderRadius:
-                                BorderRadius.circular(nsgtheme.borderRadius),
+                            borderRadius: BorderRadius.circular(
+                              nsgtheme.borderRadius,
+                            ),
                           ),
                           filled: true,
                           fillColor: widget.widgetParams!.phoneFieldColor,
                           focusedBorder: OutlineInputBorder(
-                            borderRadius:
-                                BorderRadius.circular(nsgtheme.borderRadius),
+                            borderRadius: BorderRadius.circular(
+                              nsgtheme.borderRadius,
+                            ),
                             borderSide: BorderSide(
-                                color: nsgtheme.colorText, width: 1.0),
+                              color: nsgtheme.colorText,
+                              width: 1.0,
+                            ),
                           ),
                           errorStyle: const TextStyle(fontSize: 12),
                           hintText: widget.widgetParams!.textEnterEmail,
                           hintStyle: TextStyle(
-                              color: nsgtheme.colorText.withOpacity(0.3)),
+                            color: nsgtheme.colorText.withAlpha(75),
+                          ),
                         ),
                         initialValue: phoneNumber,
                         onChanged: (value) => phoneNumber = value,
                         validator: (value) =>
                             isPhoneValid(value!) && value.length >= 16
-                                ? null
-                                : widget.widgetParams!.textEnterCorrectPhone,
+                            ? null
+                            : widget.widgetParams!.textEnterCorrectPhone,
                       ),
                   if (widget.widgetParams!.useEmailLogin)
                     if (loginType == NsgLoginType.email)
@@ -253,23 +270,31 @@ class _NsgLoginregistrationState extends State<NsgLoginRegistrationWidget> {
                         textAlign: TextAlign.center,
                         decoration: InputDecoration(
                           contentPadding: const EdgeInsets.only(
-                              left: 10, top: 10, right: 10),
+                            left: 10,
+                            top: 10,
+                            right: 10,
+                          ),
                           border: OutlineInputBorder(
-                            borderRadius:
-                                BorderRadius.circular(nsgtheme.borderRadius),
+                            borderRadius: BorderRadius.circular(
+                              nsgtheme.borderRadius,
+                            ),
                           ),
                           filled: true,
                           fillColor: widget.widgetParams!.phoneFieldColor,
                           focusedBorder: OutlineInputBorder(
-                            borderRadius:
-                                BorderRadius.circular(nsgtheme.borderRadius),
+                            borderRadius: BorderRadius.circular(
+                              nsgtheme.borderRadius,
+                            ),
                             borderSide: BorderSide(
-                                color: nsgtheme.colorText, width: 1.0),
+                              color: nsgtheme.colorText,
+                              width: 1.0,
+                            ),
                           ),
                           errorStyle: const TextStyle(fontSize: 12),
                           hintText: widget.widgetParams!.textEnterEmail,
                           hintStyle: TextStyle(
-                              color: nsgtheme.colorText.withOpacity(0.3)),
+                            color: nsgtheme.colorText.withAlpha(75),
+                          ),
                         ),
                         initialValue: email,
                         onChanged: (value) => email = value,
@@ -294,7 +319,8 @@ class _NsgLoginregistrationState extends State<NsgLoginRegistrationWidget> {
                           child: Text(
                             widget.widgetParams!.textReturnToLogin,
                             style: const TextStyle(
-                                decoration: TextDecoration.underline),
+                              decoration: TextDecoration.underline,
+                            ),
                           ),
                         ),
                       ),
@@ -309,10 +335,11 @@ class _NsgLoginregistrationState extends State<NsgLoginRegistrationWidget> {
     );
   }
 
-  void doSmsRequest(
-      {NsgLoginType loginType = NsgLoginType.phone,
-      String? password,
-      required firebaseToken}) {
+  void doSmsRequest({
+    NsgLoginType loginType = NsgLoginType.phone,
+    String? password,
+    required firebaseToken,
+  }) {
     var context = Get.context;
     if (!_formKey.currentState!.validate()) return;
     setState(() {
@@ -320,7 +347,7 @@ class _NsgLoginregistrationState extends State<NsgLoginRegistrationWidget> {
     });
     NsgMetrica.reportLoginStart('Phone');
 
-/* -------------------------------------------------------------- Если введён пароль -------------------------------------------------------------- */
+    /* -------------------------------------------------------------- Если введён пароль -------------------------------------------------------------- */
     if (password != null && password != '') {
       captchaCode = password;
     }
@@ -331,15 +358,24 @@ class _NsgLoginregistrationState extends State<NsgLoginRegistrationWidget> {
     }
     widget.provider
         .phoneLoginRequestSMS(
-            phoneNumber: loginType == NsgLoginType.phone ? phoneNumber : email,
-            securityCode: captchaCode,
-            loginType: loginType,
-            firebaseToken: firebaseToken)
-        .then((value) => checkRequestSMSanswer(context, value))
+          phoneNumber: loginType == NsgLoginType.phone ? phoneNumber : email,
+          securityCode: captchaCode,
+          loginType: loginType,
+          firebaseToken: firebaseToken,
+        )
+        .then((value) {
+          if (mounted) {
+            checkRequestSMSanswer(context, value);
+          }
+        })
         .catchError((e) {
-      widget.widgetParams!
-          .showError(context, widget.widgetParams!.textCheckInternet);
-    });
+          if (mounted) {
+            widget.widgetParams!.showError(
+              context,
+              widget.widgetParams!.textCheckInternet,
+            );
+          }
+        });
   }
 
   // void gotoLoginPage(BuildContext? context) {
@@ -356,7 +392,9 @@ class _NsgLoginregistrationState extends State<NsgLoginRegistrationWidget> {
   //}
 
   void checkRequestSMSanswer(
-      BuildContext? context, NsgLoginResponse answerCode) {
+    BuildContext? context,
+    NsgLoginResponse answerCode,
+  ) {
     if (updateTimer != null) {
       updateTimer!.cancel();
     }
@@ -372,8 +410,9 @@ class _NsgLoginregistrationState extends State<NsgLoginRegistrationWidget> {
       gotoNextPage(context);
     }
     var needRefreshCaptcha = false;
-    var errorMessage =
-        widget.widgetParams!.errorMessageByStatusCode!(answerCode.errorCode);
+    var errorMessage = widget.widgetParams!.errorMessageByStatusCode!(
+      answerCode.errorCode,
+    );
     switch (answerCode.errorCode) {
       case 40102:
         needRefreshCaptcha = true;

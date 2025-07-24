@@ -1,8 +1,18 @@
 name: nsg_login
-description: A new Flutter package project.
-# version: 0.0.1
-homepage:
-#publish_to: 'none'
+description: Визуальные компоненты для авторизации и регистрации пользователей в приложениях NSG. Поддерживает вход по телефону, email и паролю с SMS-верификацией.
+version: 1.0.0-beta.1
+homepage: https://github.com/zenalex/nsg_login
+repository: https://github.com/zenalex/nsg_login
+issue_tracker: https://github.com/zenalex/nsg_login/issues
+documentation: https://github.com/zenalex/nsg_login
+license: MIT
+topics:
+  - authentication
+  - login
+  - ui
+  - widgets
+  - forms
+publish_to: 'none' # Раскомментируйте эту строку, если не хотите публиковать пакет
 
 environment:
   sdk: ">=3.8.1 <4.0.0"
@@ -11,11 +21,13 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  # nsg_data: ^1.0.0
+  # nsg_controls: ^1.0.0-beta.1
   nsg_data:
-    path: 
+    path:
       ../nsg_data
   nsg_controls:
-    path: 
+    path:
       ../nsg_controls
 
   get: ^5.0.0-beta.52
@@ -28,7 +40,4 @@ dev_dependencies:
     sdk: flutter
   flutter_lints: ^2.0.0
 
-
 flutter:
-
-  
