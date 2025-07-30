@@ -34,6 +34,9 @@ dependencies:
   hovering: ^1.0.4
   flutter_multi_formatter: ^2.13.7
   shared_preferences: ^2.0.6
+  flutter_svg: ^2.2.0 
+  flutter_inappwebview: ^6.1.5
+  url_launcher: ^6.3.2
 
 dev_dependencies:
   flutter_test:
