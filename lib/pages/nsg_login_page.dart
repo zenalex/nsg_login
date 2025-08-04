@@ -23,11 +23,14 @@ import 'package:url_launcher/url_launcher.dart';
 class NsgLoginPage extends StatelessWidget {
   final NsgDataProvider provider;
   final NsgLoginParams Function() widgetParams;
+  final String? initialEmail;
+
   //final NsgLoginType loginType;
   NsgLoginPage(
     this.provider, {
     super.key,
     required this.widgetParams,
+    this.initialEmail,
     //this.loginType = NsgLoginType.phone
   });
 
@@ -38,7 +41,7 @@ class NsgLoginPage extends StatelessWidget {
       //backgroundColor: Colors.white,
       body: Container(
         decoration: BoxDecoration(color: nsgtheme.colorMain.withAlpha(25)),
-        child: LoginWidget(this, provider, widgetParams: widgetParams()),
+        child: LoginWidget(this, provider, widgetParams: widgetParams(), initialEmail: initialEmail),
       ),
     );
   }
@@ -101,7 +104,8 @@ class LoginWidget extends StatefulWidget {
   final NsgLoginPage loginPage;
   final NsgLoginParams widgetParams;
   final NsgDataProvider provider;
-  const LoginWidget(this.loginPage, this.provider, {super.key, required this.widgetParams});
+  final String? initialEmail;
+  const LoginWidget(this.loginPage, this.provider, {super.key, required this.widgetParams, this.initialEmail});
 }
 
 class LoginWidgetState extends State<LoginWidget> {
@@ -136,6 +140,7 @@ class LoginWidgetState extends State<LoginWidget> {
   @override
   void initState() {
     super.initState();
+    email = widget.initialEmail ?? '';
     decor = InputDecoration(
       contentPadding: const EdgeInsets.all(10),
       border: OutlineInputBorder(
