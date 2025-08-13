@@ -682,31 +682,34 @@ class LoginWidgetState extends State<LoginWidget> {
                     return;
                   }
                   var response = await widget.provider.requestVK();
-                  assert(context.mounted);
-                  if (response.errorMessage.startsWith('https://')) {
-                    var url = response.errorMessage;
-                    widget.provider.socialLoginUrl = url;
-                    widget.provider.onVerifySocialLogin = () async {
-                      await widget.provider.verifyVK();
-                      NsgNavigator.instance.offAndToPage(widget.widgetParams.mainPage);
-                    };
-                    if (!kIsWeb) {
-                      await showNsgDialog(
-                        context: context,
-                        title: '',
-                        child: SizedBox(
-                          width: MediaQuery.of(context).size.width * 0.8,
-                          height: MediaQuery.of(context).size.height * 0.6,
-                          child: NsgSocialLoginWidget(provider: widget.provider),
-                        ),
-                        buttons: [],
-                        showCloseButton: true,
-                      );
+                  if (context.mounted) {
+                    if (response.errorMessage.startsWith('https://')) {
+                      var url = response.errorMessage;
+                      if (!kIsWeb) {
+                        await showNsgDialog(
+                          context: context,
+                          title: '',
+                          child: SizedBox(
+                            width: MediaQuery.of(context).size.width * 0.8,
+                            height: MediaQuery.of(context).size.height * 0.6,
+                            child: NsgSocialLoginWidget(
+                              authUrl: url,
+                              onVerify: (response) async {
+                                await widget.provider.verifyVK(response);
+                                // widget.provider.connect(controller);
+                                NsgNavigator.instance.offAndToPage(widget.widgetParams.mainPage);
+                              },
+                            ),
+                          ),
+                          buttons: [],
+                          showCloseButton: true,
+                        );
+                      } else {
+                        await launchUrl(Uri.parse(url));
+                      }
                     } else {
-                      await launchUrl(Uri.parse(url));
+                      widget.widgetParams.showError(context, response.errorMessage);
                     }
-                  } else {
-                    widget.widgetParams.showError(context, response.errorMessage);
                   }
                 },
                 child: SvgPicture.string(
@@ -733,11 +736,6 @@ class LoginWidgetState extends State<LoginWidget> {
                   assert(context.mounted);
                   if (response.errorMessage.startsWith('https://')) {
                     var url = response.errorMessage;
-                    widget.provider.socialLoginUrl = url;
-                    widget.provider.onVerifySocialLogin = () async {
-                      await widget.provider.verifyGoogle();
-                      NsgNavigator.instance.offAndToPage(widget.widgetParams.mainPage);
-                    };
                     if (!kIsWeb) {
                       await showNsgDialog(
                         context: context,
@@ -745,7 +743,14 @@ class LoginWidgetState extends State<LoginWidget> {
                         child: SizedBox(
                           width: MediaQuery.of(context).size.width * 0.8,
                           height: MediaQuery.of(context).size.height * 0.6,
-                          child: NsgSocialLoginWidget(provider: widget.provider),
+                          child: NsgSocialLoginWidget(
+                            authUrl: url,
+                            onVerify: (response) async {
+                              await widget.provider.verifyGoogle(response);
+                              // widget.provider.connect(controller);
+                              NsgNavigator.instance.offAndToPage(widget.widgetParams.mainPage);
+                            },
+                          ),
                         ),
                         buttons: [],
                         showCloseButton: true,
@@ -901,10 +906,28 @@ class LoginWidgetState extends State<LoginWidget> {
           onChanged: (value) => newPassword2 = value,
           validator: (value) => value == newPassword1 ? null : 'Passwords mistmatch',
         ),
-      const SizedBox(height: 5),
-      if (widget.widgetParams.usePasswordLogin && widget.widgetParams.passwordIndicator != null)
-        _getIndicator(listener: passwordListener!, colors: passwordStrengthColors, values: PasswordStrength.values, messages: passwordStrengthMessages),
       const SizedBox(height: 15),
+      if (widget.widgetParams.usePasswordLogin && widget.widgetParams.passwordIndicator != null)
+        _getIndicator(listener: passwordListener!, colors: passwordStrengthColors, values: PasswordStrength.values, messages: passwordStrengthMessages, defaultColor: Colors.blueGrey, defaultMessage: 'Password is empty'),
+      const SizedBox(height: 15),
+
+      Padding(
+        padding: const EdgeInsets.only(top: 10),
+        child: InkWell(
+          onTap: () {
+            currentState = NsgLoginState.login;
+            setState(() {});
+          },
+          child: Padding(
+            padding: const EdgeInsets.only(top: 10, bottom: 10),
+            child: HoverWidget(
+              hoverChild: Text('Try another login method', style: const TextStyle()),
+              onHover: (PointerEnterEvent event) {},
+              child: Text('Try another login method', style: const TextStyle(decoration: TextDecoration.underline)),
+            ),
+          ),
+        ),
+      ),
 
       /// CONFIRM кнопка
       NsgButton(
@@ -949,37 +972,34 @@ class LoginWidgetState extends State<LoginWidget> {
     );
   }
 
-  Widget _getIndicator<T>({required ValueNotifier listener, required Iterable<T> values, required Iterable<Color> colors, required Iterable<String> messages}) {
+  Widget _getIndicator<T>({required ValueNotifier listener, required Iterable<T> values, required Iterable<Color> colors, required Iterable<String> messages, String? defaultMessage, Color? defaultColor}) {
     return ListenableBuilder(
       listenable: listener,
       builder: (BuildContext context, Widget? child) {
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 10),
-          child: Column(
-            children: [
-              Container(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(5),
-                  color: (() {
-                    for (int i = 0; i < values.length; i++) {
-                      if (values.elementAt(i) == listener.value) return colors.elementAt(i);
-                    }
-                    return Colors.transparent;
-                  })(),
-                ),
-                child: SizedBox(width: double.infinity, height: 5, child: child),
-              ),
-              const SizedBox(height: 5),
-              Text(
-                (() {
+        return Column(
+          children: [
+            Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(5),
+                color: (() {
                   for (int i = 0; i < values.length; i++) {
-                    if (values.elementAt(i) == listener.value) return messages.elementAt(i);
+                    if (values.elementAt(i) == listener.value) return colors.elementAt(i);
                   }
-                  return '';
+                  return defaultColor ?? Colors.transparent;
                 })(),
               ),
-            ],
-          ),
+              child: SizedBox(width: double.infinity, height: 5, child: child),
+            ),
+            const SizedBox(height: 5),
+            Text(
+              (() {
+                for (int i = 0; i < values.length; i++) {
+                  if (values.elementAt(i) == listener.value) return messages.elementAt(i);
+                }
+                return defaultMessage ?? '';
+              })(),
+            ),
+          ],
         );
       },
     );

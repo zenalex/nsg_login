@@ -1,12 +1,16 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
+import 'package:nsg_data/authorize/nsg_social_login_response.dart';
 import 'package:nsg_data/nsg_data.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class NsgSocialLoginWidget extends StatefulWidget {
-  final NsgDataProvider provider;
-  const NsgSocialLoginWidget({super.key, required this.provider});
+  /// Ссылка на авторизацию после request
+  final String authUrl;
+  /// Коллбек, где нужно вызвать верификацию авторизации
+  final Future<void> Function(NsgSocialLoginResponse response) onVerify;
+  const NsgSocialLoginWidget({super.key, required this.authUrl, required this.onVerify});
 
   static WebViewEnvironment? webViewEnvironment;
 
@@ -49,6 +53,8 @@ class _NsgSocialLoginWidgetState extends State<NsgSocialLoginWidget> {
   String url = "";
   double progress = 0;
 
+  bool isVerified = false;
+
   @override
   void initState() {
     super.initState();
@@ -89,7 +95,7 @@ class _NsgSocialLoginWidgetState extends State<NsgSocialLoginWidget> {
                 key: webViewKey,
                 webViewEnvironment: NsgSocialLoginWidget.webViewEnvironment,
                 initialUrlRequest: URLRequest(
-                  url: WebUri(widget.provider.socialLoginUrl),
+                  url: WebUri(widget.authUrl),
                 ),
                 initialSettings: settings,
                 pullToRefreshController: pullToRefreshController,
@@ -147,19 +153,14 @@ class _NsgSocialLoginWidgetState extends State<NsgSocialLoginWidget> {
                     this.progress = progress / 100;
                   });
                 },
-                onUpdateVisitedHistory: (controller, url, androidIsReload) {
+                onUpdateVisitedHistory: (controller, url, androidIsReload) async {
                   if (url != null) {
-                    widget.provider.socialLoginResponse.fromJson(
-                      url.queryParameters,
-                    );
-                    if (widget.provider.socialLoginResponse.isEmpty != true) {
-                      NsgNavigator.pop();
-                      if (widget.provider.onVerifySocialLogin != null) {
-                        widget.provider.onVerifySocialLogin!();
-                      }
+                    var response = NsgSocialLoginResponse()..fromJson(url.queryParameters);
+                    if (response.isEmpty != true && !isVerified) {
+                      isVerified = true;
+                      await widget.onVerify(response);
                     }
                   }
-
                   setState(() {
                     this.url = url.toString();
                   });
