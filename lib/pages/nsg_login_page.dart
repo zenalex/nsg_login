@@ -911,10 +911,10 @@ class LoginWidgetState extends State<LoginWidget> {
               child: InkWell(
                 onTap: () async {
                   // Сохранять токен обязательно
-                  if (!widget.provider.saveToken) {
-                    widget.widgetParams.showError(context, 'Опция "Запомнить пользователя" при авторизации через соцсети обязательная!');
-                    return;
-                  }
+                  // if (!widget.provider.saveToken) {
+                  //   widget.widgetParams.showError(context, 'Опция "Запомнить пользователя" при авторизации через соцсети обязательная!');
+                  //   return;
+                  // }
                   var response = await widget.provider.requestVK();
                   if (context.mounted) {
                     if (response.errorMessage.startsWith('https://')) {
@@ -962,10 +962,10 @@ class LoginWidgetState extends State<LoginWidget> {
               child: InkWell(
                 onTap: () async {
                   // Сохранять токен обязательно
-                  if (!widget.provider.saveToken) {
-                    widget.widgetParams.showError(context, 'Опция "Запомнить пользователя" при авторизации через соцсети обязательная!');
-                    return;
-                  }
+                  // if (!widget.provider.saveToken) {
+                  //   widget.widgetParams.showError(context, 'Опция "Запомнить пользователя" при авторизации через соцсети обязательная!');
+                  //   return;
+                  // }
                   var response = await widget.provider.requestGoogle();
                   assert(context.mounted);
                   if (response.errorMessage.startsWith('https://')) {
