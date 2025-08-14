@@ -350,6 +350,7 @@ class LoginWidgetState extends State<LoginWidget> {
       if (answerCode.errorCode != 0) {
         var errorMessage = widget.widgetParams.errorMessageByStatusCode!(answerCode.errorCode);
         widget.widgetParams.showError(context, errorMessage);
+        // widget.widgetParams.showError(context, answerCode.errorMessage);
       }
       return;
     }
@@ -802,16 +803,18 @@ class LoginWidgetState extends State<LoginWidget> {
           onChanged: (value) => newPassword2 = value,
           validator: (value) => value == newPassword1 ? null : 'Passwords mistmatch',
         ),
-      const SizedBox(height: 15),
       if (widget.widgetParams.usePasswordLogin && widget.widgetParams.passwordIndicator != null)
-        _getIndicator(listener: passwordListener!, colors: passwordStrengthColors, values: PasswordStrength.values, messages: passwordStrengthMessages, defaultColor: Colors.blueGrey, defaultMessage: 'Password is empty'),
-      const SizedBox(height: 15),
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 15),
+          child: _getIndicator(listener: passwordListener!, colors: passwordStrengthColors, values: PasswordStrength.values, messages: passwordStrengthMessages, defaultColor: Colors.blueGrey, defaultMessage: 'Password is empty')
+        ),
 
       Padding(
         padding: const EdgeInsets.only(top: 10),
         child: InkWell(
           onTap: () {
             currentState = NsgLoginState.login;
+            // captchaCode = '';
             setState(() {});
           },
           child: Padding(

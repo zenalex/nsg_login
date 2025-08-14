@@ -8,9 +8,14 @@ import 'package:url_launcher/url_launcher.dart';
 class NsgSocialLoginWidget extends StatefulWidget {
   /// Ссылка на авторизацию после request
   final String authUrl;
+
   /// Коллбек, где нужно вызвать верификацию авторизации
   final Future<void> Function(NsgSocialLoginResponse response) onVerify;
-  const NsgSocialLoginWidget({super.key, required this.authUrl, required this.onVerify});
+  const NsgSocialLoginWidget({
+    super.key,
+    required this.authUrl,
+    required this.onVerify,
+  });
 
   static WebViewEnvironment? webViewEnvironment;
 
@@ -86,98 +91,83 @@ class _NsgSocialLoginWidgetState extends State<NsgSocialLoginWidget> {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: <Widget>[
-        Expanded(
-          child: Stack(
-            children: [
-              InAppWebView(
-                key: webViewKey,
-                webViewEnvironment: NsgSocialLoginWidget.webViewEnvironment,
-                initialUrlRequest: URLRequest(
-                  url: WebUri(widget.authUrl),
-                ),
-                initialSettings: settings,
-                pullToRefreshController: pullToRefreshController,
-                onWebViewCreated: (controller) {
-                  webViewController = controller;
-                },
-                onLoadStart: (controller, url) {
-                  setState(() {
-                    this.url = url.toString();
-                  });
-                },
-                onPermissionRequest: (controller, request) async {
-                  return PermissionResponse(
-                    resources: request.resources,
-                    action: PermissionResponseAction.GRANT,
-                  );
-                },
-                shouldOverrideUrlLoading:
-                    (controller, navigationAction) async {
-                      var uri = navigationAction.request.url!;
+    return InAppWebView(
+      key: webViewKey,
+      webViewEnvironment: NsgSocialLoginWidget.webViewEnvironment,
+      initialUrlRequest: URLRequest(url: WebUri(widget.authUrl)),
+      initialSettings: settings,
+      pullToRefreshController: pullToRefreshController,
+      onWebViewCreated: (controller) {
+        webViewController = controller;
+      },
+      onLoadStart: (controller, url) {
+        setState(() {
+          this.url = url.toString();
+        });
+      },
+      onPermissionRequest: (controller, request) async {
+        return PermissionResponse(
+          resources: request.resources,
+          action: PermissionResponseAction.GRANT,
+        );
+      },
+      shouldOverrideUrlLoading: (controller, navigationAction) async {
+        var uri = navigationAction.request.url!;
 
-                      if (![
-                        // "http",
-                        "https",
-                        // "file",
-                        // "chrome",
-                        // "data",
-                        // "javascript",
-                        // "about",
-                      ].contains(uri.scheme)) {
-                        if (await canLaunchUrl(uri)) {
-                          // Launch the App
-                          await launchUrl(uri);
-                          // and cancel the request
-                          return NavigationActionPolicy.CANCEL;
-                        }
-                      }
+        if (![
+          // "http",
+          "https",
+          // "file",
+          // "chrome",
+          // "data",
+          // "javascript",
+          // "about",
+        ].contains(uri.scheme)) {
+          if (await canLaunchUrl(uri)) {
+            // Launch the App
+            await launchUrl(uri);
+            // and cancel the request
+            return NavigationActionPolicy.CANCEL;
+          }
+        }
 
-                      return NavigationActionPolicy.ALLOW;
-                    },
-                onLoadStop: (controller, url) async {
-                  pullToRefreshController?.endRefreshing();
-                  setState(() {
-                    this.url = url.toString();
-                  });
-                },
-                onReceivedError: (controller, request, error) {
-                  pullToRefreshController?.endRefreshing();
-                },
-                onProgressChanged: (controller, progress) {
-                  if (progress == 100) {
-                    pullToRefreshController?.endRefreshing();
-                  }
-                  setState(() {
-                    this.progress = progress / 100;
-                  });
-                },
-                onUpdateVisitedHistory: (controller, url, androidIsReload) async {
-                  if (url != null) {
-                    var response = NsgSocialLoginResponse()..fromJson(url.queryParameters);
-                    if (response.isEmpty != true && !isVerified) {
-                      isVerified = true;
-                      await widget.onVerify(response);
-                    }
-                  }
-                  setState(() {
-                    this.url = url.toString();
-                  });
-                },
-                onConsoleMessage: (controller, consoleMessage) {
-                  if (kDebugMode) {
-                    print(consoleMessage);
-                  }
-                },
-              ),
-              progress < 1.0
-                  ? LinearProgressIndicator(value: progress)
-                  : Container(),
-            ],
-          ),
-        ),
-      ],
+        return NavigationActionPolicy.ALLOW;
+      },
+      onLoadStop: (controller, url) async {
+        pullToRefreshController?.endRefreshing();
+        setState(() {
+          this.url = url.toString();
+        });
+      },
+      onReceivedError: (controller, request, error) {
+        pullToRefreshController?.endRefreshing();
+      },
+      onProgressChanged: (controller, progress) {
+        if (progress == 100) {
+          pullToRefreshController?.endRefreshing();
+        }
+        setState(() {
+          this.progress = progress / 100;
+        });
+      },
+      onUpdateVisitedHistory: (controller, url, androidIsReload) async {
+        if (url != null) {
+          var response = NsgSocialLoginResponse()
+            ..fromJson(url.queryParameters);
+          if (response.isEmpty != true && !isVerified) {
+            isVerified = true;
+            await widget.onVerify(response);
+          }
+        }
+        setState(() {
+          this.url = url.toString();
+        });
+      },
+      onConsoleMessage: (controller, consoleMessage) {
+        if (kDebugMode) {
+          print(consoleMessage);
+        }
+      },
     );
   }
 }
