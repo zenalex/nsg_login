@@ -64,8 +64,6 @@ class _NsgSocialLoginWidgetState extends State<NsgSocialLoginWidget> {
   void initState() {
     super.initState();
 
-    assert(NsgSocialLoginWidget.webViewEnvironment != null);
-
     pullToRefreshController =
         kIsWeb ||
             ![
