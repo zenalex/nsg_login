@@ -365,12 +365,14 @@ class _NsgLoginregistrationState extends State<NsgLoginRegistrationWidget> {
         )
         .then((value) {
           if (mounted) {
+            // ignore: use_build_context_synchronously
             checkRequestSMSanswer(context, value);
           }
         })
         .catchError((e) {
           if (mounted) {
             widget.widgetParams!.showError(
+              // ignore: use_build_context_synchronously
               context,
               widget.widgetParams!.textCheckInternet,
             );

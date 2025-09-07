@@ -2,7 +2,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:nsg_data/authorize/nsg_social_login_response.dart';
-import 'package:nsg_data/nsg_data.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class NsgSocialLoginWidget extends StatefulWidget {
