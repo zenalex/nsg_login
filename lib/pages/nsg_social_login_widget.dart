@@ -98,9 +98,11 @@ class _NsgSocialLoginWidgetState extends State<NsgSocialLoginWidget> {
         webViewController = controller;
       },
       onLoadStart: (controller, url) {
-        setState(() {
-          this.url = url.toString();
-        });
+        if (context.mounted) {
+          setState(() {
+            this.url = url.toString();
+          });
+        }
       },
       onPermissionRequest: (controller, request) async {
         return PermissionResponse(
@@ -132,9 +134,11 @@ class _NsgSocialLoginWidgetState extends State<NsgSocialLoginWidget> {
       },
       onLoadStop: (controller, url) async {
         pullToRefreshController?.endRefreshing();
-        setState(() {
-          this.url = url.toString();
-        });
+        if (context.mounted) {
+          setState(() {
+            this.url = url.toString();
+          });
+        }
       },
       onReceivedError: (controller, request, error) {
         pullToRefreshController?.endRefreshing();
@@ -143,9 +147,11 @@ class _NsgSocialLoginWidgetState extends State<NsgSocialLoginWidget> {
         if (progress == 100) {
           pullToRefreshController?.endRefreshing();
         }
-        setState(() {
-          this.progress = progress / 100;
-        });
+        if (context.mounted) {
+          setState(() {
+            this.progress = progress / 100;
+          });
+        }
       },
       onUpdateVisitedHistory: (controller, url, androidIsReload) async {
         if (url != null) {
@@ -156,9 +162,11 @@ class _NsgSocialLoginWidgetState extends State<NsgSocialLoginWidget> {
             await widget.onVerify(response);
           }
         }
-        setState(() {
-          this.url = url.toString();
-        });
+        if (context.mounted) {
+          setState(() {
+            this.url = url.toString();
+          });
+        }
       },
       onConsoleMessage: (controller, consoleMessage) {
         if (kDebugMode) {
