@@ -41,12 +41,7 @@ class NsgLoginPage extends StatelessWidget {
       //backgroundColor: Colors.white,
       body: Container(
         decoration: BoxDecoration(color: nsgtheme.colorMain.withAlpha(25)),
-        child: LoginWidget(
-          this,
-          provider,
-          widgetParams: widgetParams(),
-          initialEmail: initialEmail,
-        ),
+        child: LoginWidget(this, provider, widgetParams: widgetParams(), initialEmail: initialEmail),
       ),
     );
   }
@@ -110,13 +105,7 @@ class LoginWidget extends StatefulWidget {
   final NsgLoginParams widgetParams;
   final NsgDataProvider provider;
   final String? initialEmail;
-  const LoginWidget(
-    this.loginPage,
-    this.provider, {
-    super.key,
-    required this.widgetParams,
-    this.initialEmail,
-  });
+  const LoginWidget(this.loginPage, this.provider, {super.key, required this.widgetParams, this.initialEmail});
 }
 
 class LoginWidgetState extends State<LoginWidget> {
@@ -171,12 +160,8 @@ class LoginWidgetState extends State<LoginWidget> {
       errorStyle: const TextStyle(fontSize: 12),
       hintStyle: TextStyle(color: nsgtheme.colorText.withAlpha(75)),
     );
-    widget.loginPage.callback.sendDataPressed = () => doSmsRequest(
-      Get.context!,
-      loginType: loginType,
-      password: password,
-      firebaseToken: firebaseToken,
-    );
+    widget.loginPage.callback.sendDataPressed = () =>
+        doSmsRequest(Get.context!, loginType: loginType, password: password, firebaseToken: firebaseToken);
     if (widget.widgetParams.useEmailLogin) {
       loginType = NsgLoginType.email;
     } else {
@@ -224,149 +209,132 @@ class LoginWidgetState extends State<LoginWidget> {
   TextEditingController? _captchaController;
   Widget _getContext(BuildContext context) {
     if (isLoginSuccessfull) {
-      Future.delayed(const Duration(milliseconds: 10)).then((e) {
+      Future.delayed(const Duration(milliseconds: 500)).then((e) {
         if (mounted) {
-          NsgNavigator.instance.offAndToPage(widget.widgetParams.mainPage);
-          // ignore: use_build_context_synchronously
-          return getContextSuccessful(context);
+          if (widget.widgetParams.onLogin != null) {
+            widget.widgetParams.onLogin!();
+          } else {
+            NsgNavigator.instance.offAndToPage(widget.widgetParams.mainPage);
+          }
         }
       });
     }
     _captchaController ??= TextEditingController();
-    return Form(
-      key: _formKey,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 15.0, vertical: 5.0),
-        child: Stack(
-          alignment: Alignment.topRight,
-          children: [
-            Container(
-              decoration: BoxDecoration(
-                color: nsgtheme.colorMainBack,
-                borderRadius: const BorderRadius.all(Radius.circular(10)),
-              ),
-              padding: const EdgeInsets.all(15.0),
-              width: widget.widgetParams.cardSize,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.center,
+    return isLoginSuccessfull
+        ? getContextSuccessful(context)
+        : Form(
+            key: _formKey,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 15.0, vertical: 5.0),
+              child: Stack(
+                alignment: Alignment.topRight,
                 children: [
-                  Expanded(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
+                  Container(
+                    decoration: BoxDecoration(
+                      color: nsgtheme.colorMainBack,
+                      borderRadius: const BorderRadius.all(Radius.circular(10)),
+                    ),
+                    padding: const EdgeInsets.all(15.0),
+                    width: widget.widgetParams.cardSize,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
                       crossAxisAlignment: CrossAxisAlignment.center,
-                      children: <Widget>[
-                        widget.widgetParams.headerMessageVisible == true
-                            ? Padding(
-                                padding: const EdgeInsets.only(bottom: 10),
-                                child: Text(
-                                  widget.widgetParams.headerMessage,
-                                  style: TextStyle(color: nsgtheme.colorText),
-                                  textAlign: TextAlign.center,
-                                ),
-                              )
-                            : const SizedBox(),
-                        //Кнопки LOGIN, REGISTRATION
-                        //Для этапа ввода нового пароля отключаем их
-                        if (widget.widgetParams.usePasswordLogin &&
-                            currentState != NsgLoginState.verification)
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(10),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Flexible(
-                                  child: NsgButton(
-                                    borderRadius: 0,
-                                    color: currentState == NsgLoginState.login
-                                        ? nsgtheme.colorBase.b0
-                                        : nsgtheme.colorTertiary,
-                                    backColor:
-                                        currentState == NsgLoginState.login
-                                        ? nsgtheme.colorPrimary
-                                        : nsgtheme.colorSecondary,
-                                    onPressed: () {
-                                      currentState = NsgLoginState.login;
-                                      setState(() {});
-                                    },
-                                    text: widget.widgetParams.headerMessageLogin
-                                        .toUpperCase(),
+                      children: [
+                        Expanded(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: <Widget>[
+                              widget.widgetParams.headerMessageVisible == true
+                                  ? Padding(
+                                      padding: const EdgeInsets.only(bottom: 10),
+                                      child: Text(
+                                        widget.widgetParams.headerMessage,
+                                        style: TextStyle(color: nsgtheme.colorText),
+                                        textAlign: TextAlign.center,
+                                      ),
+                                    )
+                                  : const SizedBox(),
+                              //Кнопки LOGIN, REGISTRATION
+                              //Для этапа ввода нового пароля отключаем их
+                              if (widget.widgetParams.usePasswordLogin && currentState != NsgLoginState.verification)
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(10),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Flexible(
+                                        child: NsgButton(
+                                          borderRadius: 0,
+                                          color: currentState == NsgLoginState.login
+                                              ? nsgtheme.colorBase.b0
+                                              : nsgtheme.colorTertiary,
+                                          backColor: currentState == NsgLoginState.login
+                                              ? nsgtheme.colorPrimary
+                                              : nsgtheme.colorSecondary,
+                                          onPressed: () {
+                                            currentState = NsgLoginState.login;
+                                            setState(() {});
+                                          },
+                                          text: widget.widgetParams.headerMessageLogin.toUpperCase(),
+                                        ),
+                                      ),
+
+                                      Flexible(
+                                        child: NsgButton(
+                                          borderRadius: 0,
+                                          color: currentState == NsgLoginState.registration
+                                              ? nsgtheme.colorBase.b0
+                                              : nsgtheme.colorTertiary,
+                                          backColor: currentState == NsgLoginState.registration
+                                              ? nsgtheme.colorPrimary
+                                              : nsgtheme.colorSecondary,
+                                          onPressed: () {
+                                            currentState = NsgLoginState.registration;
+                                            setState(() {});
+                                          },
+                                          text: widget.widgetParams.headerMessageRegistration.toUpperCase(),
+                                        ),
+                                      ),
+
+                                      //    Text(
+                                      //   widget.widgetParams.headerMessageLogin,
+                                      //   style: widget.widgetParams.headerMessageStyle,
+                                      //   textAlign: TextAlign.center,
+                                      // ),
+                                    ],
                                   ),
                                 ),
 
-                                Flexible(
-                                  child: NsgButton(
-                                    borderRadius: 0,
-                                    color:
-                                        currentState ==
-                                            NsgLoginState.registration
-                                        ? nsgtheme.colorBase.b0
-                                        : nsgtheme.colorTertiary,
-                                    backColor:
-                                        currentState ==
-                                            NsgLoginState.registration
-                                        ? nsgtheme.colorPrimary
-                                        : nsgtheme.colorSecondary,
-                                    onPressed: () {
-                                      currentState = NsgLoginState.registration;
-                                      setState(() {});
-                                    },
-                                    text: widget
-                                        .widgetParams
-                                        .headerMessageRegistration
-                                        .toUpperCase(),
-                                  ),
-                                ),
-
-                                //    Text(
-                                //   widget.widgetParams.headerMessageLogin,
-                                //   style: widget.widgetParams.headerMessageStyle,
-                                //   textAlign: TextAlign.center,
-                                // ),
-                              ],
-                            ),
+                              if (currentState == NsgLoginState.login) ..._loginStateWidget(),
+                              if (currentState == NsgLoginState.registration) ..._registrationStateWidget(),
+                              if (currentState == NsgLoginState.verification) ..._verificationStateWidget(),
+                            ],
                           ),
-
-                        if (currentState == NsgLoginState.login)
-                          ..._loginStateWidget(),
-                        if (currentState == NsgLoginState.registration)
-                          ..._registrationStateWidget(),
-                        if (currentState == NsgLoginState.verification)
-                          ..._verificationStateWidget(),
+                        ),
                       ],
                     ),
                   ),
+                  if (widget.widgetParams.onClose != null)
+                    InkWell(
+                      onTap: () {
+                        NsgNavigator.pop();
+                        widget.widgetParams.onClose!();
+                      },
+                      child: Padding(
+                        padding: const EdgeInsets.all(5.0),
+                        child: Icon(NsgIcons.close, color: nsgtheme.colorPrimary.b100.withAlpha(127), size: 18),
+                      ),
+                    ),
                 ],
               ),
             ),
-            if (widget.widgetParams.onClose != null)
-              InkWell(
-                onTap: () {
-                  NsgNavigator.pop();
-                  widget.widgetParams.onClose!;
-                },
-                child: Padding(
-                  padding: const EdgeInsets.all(5.0),
-                  child: Icon(
-                    NsgIcons.close,
-                    color: nsgtheme.colorPrimary.b100.withAlpha(127),
-                    size: 18,
-                  ),
-                ),
-              ),
-          ],
-        ),
-      ),
-    );
+          );
   }
 
   Widget? getcaptchaImage() {
     if (captureImage == null || isCaptchaLoading) {
-      return Icon(
-        Icons.hourglass_empty,
-        color: widget.widgetParams.textColor,
-        size: 40.0,
-      );
+      return Icon(Icons.hourglass_empty, color: widget.widgetParams.textColor, size: 40.0);
     }
     return captureImage;
   }
@@ -382,20 +350,15 @@ class LoginWidgetState extends State<LoginWidget> {
     return image;
   }
 
-  void checkRequestSMSanswer(
-    BuildContext? context,
-    NsgLoginResponse answerCode,
-  ) {
+  void checkRequestSMSanswer(BuildContext? context, NsgLoginResponse answerCode) {
     if (updateTimer != null) {
       updateTimer!.cancel();
     }
 
     //0 - успешно, 40201 - смс отправлено ранее. И в том и другом случае, переходим на экран ввода кода подтверждения
     if ((answerCode.errorCode == 0 || answerCode.errorCode == 40201) &&
-        (currentState == NsgLoginState.registration ||
-            currentState == NsgLoginState.login)) {
-      if (currentState == NsgLoginState.registration ||
-          !widget.widgetParams.usePasswordLogin) {
+        (currentState == NsgLoginState.registration || currentState == NsgLoginState.login)) {
+      if (currentState == NsgLoginState.registration || !widget.widgetParams.usePasswordLogin) {
         currentState = NsgLoginState.verification;
       } else {
         isLoginSuccessfull = true;
@@ -403,9 +366,7 @@ class LoginWidgetState extends State<LoginWidget> {
       setState(() {});
       //Если мы перешли на экран с ошибкой смс уже отправлено, выводим ошибку на экран после перехода на страницу подтверждения
       if (answerCode.errorCode != 0) {
-        var errorMessage = widget.widgetParams.errorMessageByStatusCode!(
-          answerCode.errorCode,
-        );
+        var errorMessage = widget.widgetParams.errorMessageByStatusCode!(answerCode.errorCode);
         widget.widgetParams.showError(context, errorMessage);
         // widget.widgetParams.showError(context, answerCode.errorMessage);
       }
@@ -413,7 +374,11 @@ class LoginWidgetState extends State<LoginWidget> {
     }
     if (answerCode.errorCode == 0 && widget.widgetParams.usePasswordLogin) {
       NsgMetrica.reportLoginSuccess('Phone');
-      NsgNavigator.instance.offAndToPage(widget.widgetParams.mainPage);
+      if (widget.widgetParams.onLogin != null) {
+        widget.widgetParams.onLogin!();
+      } else {
+        NsgNavigator.instance.offAndToPage(widget.widgetParams.mainPage);
+      }
       return;
     }
     if (answerCode.errorCode == 0 && !widget.widgetParams.usePasswordLogin) {
@@ -421,9 +386,7 @@ class LoginWidgetState extends State<LoginWidget> {
       return;
     }
     var needRefreshCaptcha = false;
-    var errorMessage = widget.widgetParams.errorMessageByStatusCode!(
-      answerCode.errorCode,
-    );
+    var errorMessage = widget.widgetParams.errorMessageByStatusCode!(answerCode.errorCode);
     switch (answerCode.errorCode) {
       case 40102:
         needRefreshCaptcha = true;
@@ -477,10 +440,7 @@ class LoginWidgetState extends State<LoginWidget> {
           })
           .catchError((e) {
             if (mounted) {
-              widget.widgetParams.showError(
-                context,
-                widget.widgetParams.textCheckInternet,
-              );
+              widget.widgetParams.showError(context, widget.widgetParams.textCheckInternet);
             }
           });
     } else {
@@ -498,10 +458,7 @@ class LoginWidgetState extends State<LoginWidget> {
           })
           .catchError((e) {
             if (mounted) {
-              widget.widgetParams.showError(
-                context,
-                widget.widgetParams.textCheckInternet,
-              );
+              widget.widgetParams.showError(context, widget.widgetParams.textCheckInternet);
             }
           });
     }
@@ -519,10 +476,7 @@ class LoginWidgetState extends State<LoginWidget> {
           updateTimer!.cancel();
         }
         secondsLeft = 120;
-        updateTimer = Timer.periodic(
-          const Duration(seconds: 1),
-          (Timer t) => captchaTimer(t),
-        );
+        updateTimer = Timer.periodic(const Duration(seconds: 1), (Timer t) => captchaTimer(t));
       }),
     );
   }
@@ -540,7 +494,7 @@ class LoginWidgetState extends State<LoginWidget> {
   }
 
   void gotoNextPage(BuildContext? context) async {
-    //TODO: navigation
+    //FIXME: navigation
     // var result = await Navigator.push<bool>(context!,
     //     MaterialPageRoute(builder: (context) => _getVerificationWidget()));
     // //var result = await Get.to(_getVerificationWidget);
@@ -562,9 +516,7 @@ class LoginWidgetState extends State<LoginWidget> {
       child: Card(
         margin: const EdgeInsets.symmetric(horizontal: 15.0),
         color: widget.widgetParams.cardColor,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10.0),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.0)),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 15.0, vertical: 15.0),
           child: Row(
@@ -576,9 +528,13 @@ class LoginWidgetState extends State<LoginWidget> {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: <Widget>[
-                    Text(
-                      widget.widgetParams.textLoginSuccessful,
-                      style: widget.widgetParams.headerMessageStyle,
+                    SizedBox(
+                      width: 250,
+                      child: Text(
+                        widget.widgetParams.textLoginSuccessful,
+                        style: widget.widgetParams.headerMessageStyle,
+                        textAlign: TextAlign.center,
+                      ),
                     ),
                   ],
                 ),
@@ -593,8 +549,7 @@ class LoginWidgetState extends State<LoginWidget> {
   ///Элементы управления для состояния login
   List<Widget> _loginStateWidget() {
     return [
-      if (widget.widgetParams.useEmailLogin &&
-          widget.widgetParams.usePhoneLogin)
+      if (widget.widgetParams.useEmailLogin && widget.widgetParams.usePhoneLogin)
         Padding(
           padding: const EdgeInsets.only(bottom: 5, top: 5),
           child: Row(
@@ -639,14 +594,10 @@ class LoginWidgetState extends State<LoginWidget> {
             inputFormatters: [phoneFormatter],
             style: TextStyle(color: nsgtheme.colorText),
             textAlign: TextAlign.center,
-            decoration: decor.copyWith(
-              hintText: widget.widgetParams.textEnterPhone,
-            ),
+            decoration: decor.copyWith(hintText: widget.widgetParams.textEnterPhone),
             initialValue: phoneNumber,
             onChanged: (value) => phoneNumber = value,
-            validator: (value) => isPhoneValid(value!)
-                ? null
-                : widget.widgetParams.textEnterCorrectPhone,
+            validator: (value) => isPhoneValid(value!) ? null : widget.widgetParams.textEnterCorrectPhone,
           ),
       if (widget.widgetParams.useEmailLogin)
         if (loginType == NsgLoginType.email)
@@ -657,9 +608,7 @@ class LoginWidgetState extends State<LoginWidget> {
             inputFormatters: null,
             style: TextStyle(color: nsgtheme.colorText),
             textAlign: TextAlign.center,
-            decoration: decor.copyWith(
-              hintText: widget.widgetParams.textEnterEmail,
-            ),
+            decoration: decor.copyWith(hintText: widget.widgetParams.textEnterEmail),
             initialValue: email,
             onChanged: (value) => email = value,
             validator: (value) => null,
@@ -675,15 +624,11 @@ class LoginWidgetState extends State<LoginWidget> {
             inputFormatters: null,
             style: TextStyle(color: nsgtheme.colorText),
             textAlign: TextAlign.center,
-            decoration: decor.copyWith(
-              hintText: widget.widgetParams.textEnterPassword,
-            ),
+            decoration: decor.copyWith(hintText: widget.widgetParams.textEnterPassword),
             onChanged: (value) {
               password = value;
             },
-            validator: (value) => value == null || value.length < 1
-                ? 'Password is required'
-                : null,
+            validator: (value) => value == null || value.length < 1 ? 'Password is required' : null,
           ),
         ),
       if (kIsWeb || (!Platform.isAndroid && !Platform.isIOS))
@@ -735,24 +680,17 @@ class LoginWidgetState extends State<LoginWidget> {
             //borderRadius: BorderRadius.circular(5.0),
           ),
           child: Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 0.0,
-              vertical: 10.0,
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: 0.0, vertical: 10.0),
             child: TextFormField(
               key: GlobalKey(),
               cursorColor: Theme.of(context).primaryColor,
               controller: _captchaController,
               textAlign: TextAlign.center,
-              decoration: decor.copyWith(
-                hintText: widget.widgetParams.textEnterCaptcha,
-              ),
+              decoration: decor.copyWith(hintText: widget.widgetParams.textEnterCaptcha),
               style: widget.widgetParams.textPhoneField,
               textCapitalization: TextCapitalization.characters,
               onChanged: (value) => captchaCode = value,
-              validator: (value) => captchaCode.length == 6
-                  ? null
-                  : widget.widgetParams.textEnterCaptcha,
+              validator: (value) => captchaCode.length == 6 ? null : widget.widgetParams.textEnterCaptcha,
             ),
           ),
         ),
@@ -761,12 +699,7 @@ class LoginWidgetState extends State<LoginWidget> {
         onPressed: () {
           widget.widgetParams.phoneNumber = phoneNumber;
           widget.widgetParams.loginType = loginType;
-          doSmsRequest(
-            Get.context!,
-            loginType: loginType,
-            password: password,
-            firebaseToken: firebaseToken,
-          );
+          doSmsRequest(Get.context!, loginType: loginType, password: password, firebaseToken: firebaseToken);
         },
         text: widget.widgetParams.headerMessageLogin.toUpperCase(),
       ),
@@ -781,10 +714,7 @@ class LoginWidgetState extends State<LoginWidget> {
             child: Padding(
               padding: const EdgeInsets.only(top: 10, bottom: 10),
               child: HoverWidget(
-                hoverChild: Text(
-                  widget.widgetParams.textRegistration,
-                  style: const TextStyle(),
-                ),
+                hoverChild: Text(widget.widgetParams.textRegistration, style: const TextStyle()),
                 onHover: (PointerEnterEvent event) {},
                 child: Text(
                   widget.widgetParams.textRegistration,
@@ -800,8 +730,7 @@ class LoginWidgetState extends State<LoginWidget> {
 
   List<Widget> _registrationStateWidget() {
     return [
-      if (widget.widgetParams.usePhoneLogin &&
-          widget.widgetParams.useEmailLogin)
+      if (widget.widgetParams.usePhoneLogin && widget.widgetParams.useEmailLogin)
         Padding(
           padding: const EdgeInsets.only(bottom: 5, top: 5),
           child: Row(
@@ -849,15 +778,12 @@ class LoginWidgetState extends State<LoginWidget> {
               // style: widget.widgetParams.textPhoneField,
               style: TextStyle(color: nsgtheme.colorText),
               textAlign: TextAlign.center,
-              decoration: decor.copyWith(
-                hintText: widget.widgetParams.textEnterPhone,
-              ),
+              decoration: decor.copyWith(hintText: widget.widgetParams.textEnterPhone),
 
               initialValue: phoneNumber,
               onChanged: (value) => phoneNumber = value,
-              validator: (value) => isPhoneValid(value!) && value.length >= 9
-                  ? null
-                  : widget.widgetParams.textEnterCorrectPhone,
+              validator: (value) =>
+                  isPhoneValid(value!) && value.length >= 9 ? null : widget.widgetParams.textEnterCorrectPhone,
             ),
           ),
       if (widget.widgetParams.useEmailLogin)
@@ -871,9 +797,7 @@ class LoginWidgetState extends State<LoginWidget> {
               inputFormatters: null,
               style: TextStyle(color: nsgtheme.colorText),
               textAlign: TextAlign.center,
-              decoration: decor.copyWith(
-                hintText: widget.widgetParams.textEnterEmail,
-              ),
+              decoration: decor.copyWith(hintText: widget.widgetParams.textEnterEmail),
               initialValue: email,
               onChanged: (value) => email = value,
               validator: (value) => null,
@@ -885,11 +809,7 @@ class LoginWidgetState extends State<LoginWidget> {
       NsgButton(
         margin: EdgeInsets.zero,
         onPressed: () {
-          doSmsRequest(
-            context,
-            firebaseToken: firebaseToken,
-            loginType: loginType,
-          );
+          doSmsRequest(context, firebaseToken: firebaseToken, loginType: loginType);
         },
         text: widget.widgetParams.textSendSms.toUpperCase(),
       ),
@@ -902,8 +822,7 @@ class LoginWidgetState extends State<LoginWidget> {
   ///при использовании варианта авторизации по паролю, установка нового пароля пользователя
   List<Widget> _verificationStateWidget() {
     ValueNotifier<PasswordStrength?>? passwordListener;
-    if (widget.widgetParams.passwordIndicator != null)
-      passwordListener = ValueNotifier(null);
+    if (widget.widgetParams.passwordIndicator != null) passwordListener = ValueNotifier(null);
     return [
       Padding(
         padding: const EdgeInsets.only(bottom: 10),
@@ -919,9 +838,7 @@ class LoginWidgetState extends State<LoginWidget> {
         autofillHints: [AutofillHints.oneTimeCode],
         keyboardType: TextInputType.number,
         onChanged: (value) => securityCode = value,
-        validator: (value) => value == null || value.length < 6
-            ? 'Enter confirmation code from message'
-            : null,
+        validator: (value) => value == null || value.length < 6 ? 'Enter confirmation code from message' : null,
       ),
       if (widget.widgetParams.usePasswordLogin)
         _getInput(
@@ -930,9 +847,7 @@ class LoginWidgetState extends State<LoginWidget> {
           obscureText: true,
           onChanged: (value) {
             if (widget.widgetParams.passwordIndicator != null) {
-              passwordListener!.value = widget.widgetParams.passwordIndicator!(
-                value,
-              );
+              passwordListener!.value = widget.widgetParams.passwordIndicator!(value);
             }
             newPassword1 = value;
           },
@@ -944,11 +859,9 @@ class LoginWidgetState extends State<LoginWidget> {
           initialValue: newPassword2,
           obscureText: true,
           onChanged: (value) => newPassword2 = value,
-          validator: (value) =>
-              value == newPassword1 ? null : 'Passwords mistmatch',
+          validator: (value) => value == newPassword1 ? null : 'Passwords mistmatch',
         ),
-      if (widget.widgetParams.usePasswordLogin &&
-          widget.widgetParams.passwordIndicator != null)
+      if (widget.widgetParams.usePasswordLogin && widget.widgetParams.passwordIndicator != null)
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 15),
           child: _getIndicator(
@@ -972,15 +885,9 @@ class LoginWidgetState extends State<LoginWidget> {
           child: Padding(
             padding: const EdgeInsets.only(top: 10, bottom: 10),
             child: HoverWidget(
-              hoverChild: Text(
-                'Try another login method',
-                style: const TextStyle(),
-              ),
+              hoverChild: Text('Try another login method', style: const TextStyle()),
               onHover: (PointerEnterEvent event) {},
-              child: Text(
-                'Try another login method',
-                style: const TextStyle(decoration: TextDecoration.underline),
-              ),
+              child: Text('Try another login method', style: const TextStyle(decoration: TextDecoration.underline)),
             ),
           ),
         ),
@@ -990,12 +897,7 @@ class LoginWidgetState extends State<LoginWidget> {
       NsgButton(
         margin: EdgeInsets.zero,
         onPressed: () {
-          setNewPassword(
-            context,
-            securityCode: securityCode,
-            loginType: loginType,
-            newPassword: newPassword1,
-          );
+          setNewPassword(context, securityCode: securityCode, loginType: loginType, newPassword: newPassword1);
         },
         text: widget.widgetParams.textConfirm.toUpperCase(),
       ),
@@ -1052,8 +954,7 @@ class LoginWidgetState extends State<LoginWidget> {
                 borderRadius: BorderRadius.circular(5),
                 color: (() {
                   for (int i = 0; i < values.length; i++) {
-                    if (values.elementAt(i) == listener.value)
-                      return colors.elementAt(i);
+                    if (values.elementAt(i) == listener.value) return colors.elementAt(i);
                   }
                   return defaultColor ?? Colors.transparent;
                 })(),
@@ -1064,8 +965,7 @@ class LoginWidgetState extends State<LoginWidget> {
             Text(
               (() {
                 for (int i = 0; i < values.length; i++) {
-                  if (values.elementAt(i) == listener.value)
-                    return messages.elementAt(i);
+                  if (values.elementAt(i) == listener.value) return messages.elementAt(i);
                 }
                 return defaultMessage ?? '';
               })(),
@@ -1105,9 +1005,7 @@ class LoginWidgetState extends State<LoginWidget> {
                           onVerify: (response) async {
                             await widget.provider.verifyVK(response);
                             // widget.provider.connect(controller);
-                            NsgNavigator.instance.offAndToPage(
-                              widget.widgetParams.mainPage,
-                            );
+                            NsgNavigator.instance.offAndToPage(widget.widgetParams.mainPage);
                           },
                         ),
                       ),
@@ -1158,9 +1056,7 @@ class LoginWidgetState extends State<LoginWidget> {
                         onVerify: (response) async {
                           await widget.provider.verifyGoogle(response);
                           // widget.provider.connect(controller);
-                          NsgNavigator.instance.offAndToPage(
-                            widget.widgetParams.mainPage,
-                          );
+                          NsgNavigator.instance.offAndToPage(widget.widgetParams.mainPage);
                         },
                       ),
                     ),
@@ -1211,19 +1107,13 @@ class LoginWidgetState extends State<LoginWidget> {
         )
         .then((value) => checkRequestNewPasswordanswer(context, value))
         .catchError((e) {
-          widget.widgetParams.showError(
-            context,
-            widget.widgetParams.textCheckInternet,
-          );
+          widget.widgetParams.showError(context, widget.widgetParams.textCheckInternet);
         });
   }
 
   ///Проверка результата попытки установить новый пароль пользователя фукцией setNewPassword
   ///answerCode - проверяемый код ответа
-  void checkRequestNewPasswordanswer(
-    BuildContext? context,
-    NsgLoginResponse answerCode,
-  ) {
+  void checkRequestNewPasswordanswer(BuildContext? context, NsgLoginResponse answerCode) {
     if (updateTimer != null) {
       updateTimer!.cancel();
     }
@@ -1238,9 +1128,7 @@ class LoginWidgetState extends State<LoginWidget> {
     }
     //Если код ответа отличен от нуля - это ошибка, расшифровываем её и показываем пользователю
     //TODO: проверить остались ли еще попытки ввода кода подтверждения или требуется новый.
-    var errorMessage = widget.widgetParams.errorMessageByStatusCode!(
-      answerCode.errorCode,
-    );
+    var errorMessage = widget.widgetParams.errorMessageByStatusCode!(answerCode.errorCode);
     NsgMetrica.reportLoginFailed('Phone', answerCode.toString());
     widget.widgetParams.showError(context, errorMessage);
   }
