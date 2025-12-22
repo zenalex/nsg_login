@@ -11,7 +11,7 @@ import 'package:nsg_data/authorize/nsg_login_model.dart';
 import 'package:nsg_data/authorize/nsg_login_response.dart';
 import 'package:nsg_data/nsg_data.dart';
 
-import 'package:nsg_controls/nsg_login_params.dart';
+import 'package:nsg_login/nsg_login_params.dart';
 
 class NsgLoginRegistrationPage extends StatelessWidget {
   final NsgDataProvider provider;
