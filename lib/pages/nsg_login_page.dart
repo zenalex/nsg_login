@@ -1115,8 +1115,9 @@ class LoginWidgetState extends State<LoginWidget> {
                       NsgSocialLoginResponse? response;
                       if (!kIsWeb) {
                         await showNsgDialog(
+                          contentPadding: EdgeInsets.zero,
                           context: context,
-                          title: '',
+                          title: "Авторизация: ${i.socialName}",
                           child: SizedBox(
                             width: MediaQuery.of(context).size.width * 0.8,
                             height: MediaQuery.of(context).size.height * 0.6,
