@@ -10,15 +10,24 @@ class SocialLoginProvider {
     SocialAuthType social, {
     Future<NsgSocialLoginResponse?> Function(String url)? onAuthLink,
   }) async {
-    //Получаем ссылку для авторизации с токенами с сервера (в поле errorMessage)
+    if (social.useNativeAuth) {
+      var authResult = await social.performNativeAuth();
+      return await processVerify(social, authResult);
+    }
+
     var response = await provider.requestSocialMethod(
       methodName: social.requestMethodName,
       function: social.requestFunction,
       params: social.requestParams,
     );
 
+    if (response.isError) {
+      throw Exception(response.errorMessage.isNotEmpty
+          ? response.errorMessage
+          : 'Authorization request failed');
+    }
+
     NsgSocialLoginResponse? authLink;
-    //Переходим по ссылке для авторизации
     if (response.errorMessage.startsWith('https://')) {
       var url = response.errorMessage;
       if (onAuthLink != null) {
