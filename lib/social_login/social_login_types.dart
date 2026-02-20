@@ -16,6 +16,16 @@ abstract class SocialAuthType {
     return login.toJson();
   }
 
+  /// Нативная авторизация на устройстве (например, Apple Sign In).
+  /// Если true, вместо веб-флоу (request URL → WebView → verify)
+  /// вызывается [performNativeAuth], результат отправляется на verify.
+  bool get useNativeAuth => false;
+
+  /// Выполняет нативную авторизацию на устройстве.
+  /// Возвращает [NsgSocialLoginResponse] с code/state для верификации,
+  /// или null если пользователь отменил.
+  Future<NsgSocialLoginResponse?> performNativeAuth() async => null;
+
   Widget get icon;
   String get socialName;
 }
