@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:nsg_data/authorize/nsg_social_login_response.dart';
 import 'package:nsg_data/nsg_data_provider.dart';
 import 'package:nsg_login/social_login/social_login_types.dart';
@@ -8,10 +9,11 @@ class SocialLoginProvider {
   final NsgDataProvider provider;
   Future<bool> processLogin(
     SocialAuthType social, {
+    BuildContext? context,
     Future<NsgSocialLoginResponse?> Function(String url)? onAuthLink,
   }) async {
     if (social.useNativeAuth) {
-      var authResult = await social.performNativeAuth();
+      var authResult = await social.performNativeAuth(context: context);
       return await processVerify(social, authResult);
     }
 
@@ -22,9 +24,11 @@ class SocialLoginProvider {
     );
 
     if (response.isError) {
-      throw Exception(response.errorMessage.isNotEmpty
-          ? response.errorMessage
-          : 'Authorization request failed');
+      throw Exception(
+        response.errorMessage.isNotEmpty
+            ? response.errorMessage
+            : 'Authorization request failed',
+      );
     }
 
     NsgSocialLoginResponse? authLink;

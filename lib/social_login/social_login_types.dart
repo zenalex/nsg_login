@@ -8,13 +8,8 @@ abstract class SocialAuthType {
   String get verifyFunction;
   String get verifyMethodName;
   Map<String, dynamic>? get requestParams => NsgLoginModel().toJson();
-  Map<String, dynamic>? getVerifyParams(NsgSocialLoginResponse response) {
-    var login = NsgLoginModel();
-    login.code = response.code;
-    login.deviceId = response.deviceId;
-    login.state = response.state;
-    return login.toJson();
-  }
+  Map<String, dynamic>? getVerifyParams(NsgSocialLoginResponse response) =>
+      response.toJson();
 
   /// Нативная авторизация на устройстве (например, Apple Sign In).
   /// Если true, вместо веб-флоу (request URL → WebView → verify)
@@ -24,8 +19,10 @@ abstract class SocialAuthType {
   /// Выполняет нативную авторизацию на устройстве.
   /// Возвращает [NsgSocialLoginResponse] с code/state для верификации,
   /// или null если пользователь отменил.
-  Future<NsgSocialLoginResponse?> performNativeAuth() async => null;
+  Future<NsgSocialLoginResponse?> performNativeAuth({
+    BuildContext? context,
+  }) async => null;
 
-  Widget get icon;
+  Widget Function(void Function() login) get icon;
   String get socialName;
 }

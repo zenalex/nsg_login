@@ -20,7 +20,6 @@ import 'package:nsg_controls/dialog/show_nsg_dialog.dart';
 import 'package:nsg_controls/widgets/nsg_snackbar.dart';
 import 'package:nsg_login/pages/nsg_social_login_widget.dart';
 import 'package:nsg_login/social_login/social_login_provider.dart';
-import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class NsgLoginPage extends StatelessWidget {
@@ -1110,67 +1109,58 @@ class LoginWidgetState extends State<LoginWidget> {
           mainAxisAlignment: MainAxisAlignment.center,
           mainAxisSize: MainAxisSize.min,
           children: widget.widgetParams.socialLoginTypes.map((i) {
-        Future<void> onSocialTap() async {
-          try {
-            var success = await socialProvider.processLogin(
-              i,
-              onAuthLink: (url) async {
-                NsgSocialLoginResponse? response;
-                if (!kIsWeb) {
-                  await showNsgDialog(
-                    contentPadding: EdgeInsets.zero,
-                    context: context,
-                    title: "Авторизация: ${i.socialName}",
-                    child: SizedBox(
-                      width: MediaQuery.of(context).size.width * 0.8,
-                      height: MediaQuery.of(context).size.height * 0.6,
-                      child: NsgSocialLoginWidget(
-                        authUrl: url,
-                        onVerify: (res) async {
-                          response = res;
-                        },
-                      ),
-                    ),
-                    buttons: [],
-                    showCloseButton: true,
+            Future<void> onSocialTap() async {
+              try {
+                var success = await socialProvider.processLogin(
+                  i,
+                  context: context,
+                  onAuthLink: (url) async {
+                    NsgSocialLoginResponse? response;
+                    if (!kIsWeb) {
+                      await showNsgDialog(
+                        contentPadding: EdgeInsets.zero,
+                        context: context,
+                        title: "Авторизация: ${i.socialName}",
+                        child: SizedBox(
+                          width: MediaQuery.of(context).size.width * 0.8,
+                          height: MediaQuery.of(context).size.height * 0.6,
+                          child: NsgSocialLoginWidget(
+                            authUrl: url,
+                            onVerify: (res) async {
+                              response = res;
+                            },
+                          ),
+                        ),
+                        buttons: [],
+                        showCloseButton: true,
+                      );
+                    } else {
+                      await launchUrl(Uri.parse(url));
+                    }
+                    if (response != null) {
+                      return response!;
+                    }
+                    return null;
+                  },
+                );
+                if (success) {
+                  NsgNavigator.instance.offAndToPage(
+                    widget.widgetParams.mainPage,
                   );
-                } else {
-                  await launchUrl(Uri.parse(url));
                 }
-                if (response != null) {
-                  return response!;
+              } catch (e) {
+                debugPrint('Social login error: $e');
+                if (context.mounted) {
+                  nsgSnackbar(text: e.toString(), type: NsgSnarkBarType.error);
                 }
-                return null;
-              },
-            );
-            if (success) {
-              NsgNavigator.instance.offAndToPage(widget.widgetParams.mainPage);
+              }
             }
-          } catch (e) {
-            debugPrint('Social login error: $e');
-            if (context.mounted) {
-              nsgSnackbar(text: e.toString(), type: NsgSnarkBarType.error);
-            }
-          }
-        }
 
-        final isApple = i.socialName == 'Apple';
-        if (isApple) {
-          return Flexible(
-            child: Padding(
+            return Padding(
               padding: const EdgeInsetsGeometry.symmetric(horizontal: 5),
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 220, maxHeight: 44),
-                child: SignInWithAppleButton(onPressed: () => onSocialTap()),
-              ),
-            ),
-          );
-        }
-        return Padding(
-          padding: const EdgeInsetsGeometry.symmetric(horizontal: 5),
-          child: InkWell(onTap: onSocialTap, child: i.icon),
-        );
-      }).toList(),
+              child: i.icon(onSocialTap),
+            );
+          }).toList(),
         ),
       ),
     );
