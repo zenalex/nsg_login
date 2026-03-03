@@ -1105,7 +1105,7 @@ class LoginWidgetState extends State<LoginWidget> {
     return Center(
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 400),
-        child: Row(
+        child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           mainAxisSize: MainAxisSize.min,
           children: widget.widgetParams.socialLoginTypes.map((i) {
@@ -1157,7 +1157,10 @@ class LoginWidgetState extends State<LoginWidget> {
             }
 
             return Padding(
-              padding: const EdgeInsetsGeometry.symmetric(horizontal: 5),
+              padding: const EdgeInsetsGeometry.symmetric(
+                horizontal: 5,
+                vertical: 5,
+              ),
               child: i.icon(onSocialTap),
             );
           }).toList(),

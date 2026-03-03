@@ -57,22 +57,27 @@ abstract class TelegramDefaultAuth extends SocialAuthType {
 
   @override
   Widget Function(void Function() login) get icon =>
-      (onSocialTap) => InkWell(
+      (onSocialTap) => SocialLoginButton(
         onTap: onSocialTap,
-        child: SvgPicture.string(
-          '''<svg version="1.2" baseProfile="tiny" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
-	 x="0px" y="0px" viewBox="0 0 100 100" overflow="visible" xml:space="preserve">
-	<path fill="#FFFFFF" d="M10.6,54.3c-0.2-7.4,1.4-14.1,5.9-20c5-6.5,11.7-9.8,19.9-9.3c2.7,0.1,5.3,1,7.6,2.2
-		c4.5,2.3,8.7,2.2,13.2,0c3.6-1.8,7.6-2.8,11.7-2.6c7,0.4,12.9,3,17.3,8.5c0.7,0.9,0.7,1.3-0.3,2c-5.1,3.5-8.4,8.4-9.1,14.5
-		c-1.3,9.8,2.8,17.7,11.8,22.5c0.7,0.4,1.1,0.6,0.8,1.4C86.4,82,82,89.4,75.6,95.4c-3.8,3.6-8.4,4.1-13.2,2.1
-		c-3.4-1.4-6.6-2.9-10.4-2.8c-3.3,0-6.3,0.9-9.3,2.3c-2,0.9-4,1.6-6.2,1.7c-3.3,0.2-6.1-1-8.3-3.3C21,88.4,16,80,13,70.4
-		C11.4,65.1,10.4,59.8,10.6,54.3z"/>
-	<path fill="#FFFFFF" d="M49.7,20C50.5,13.7,54,8,60.4,4.1c2.5-1.5,5.1-2.6,8-2.8c0.8-0.1,1,0.1,1.1,0.9c0.5,9.5-6.6,19.1-15.9,21.2
-		c-0.4,0.1-0.8,0.1-1.2,0.2C49.7,23.8,49.7,23.8,49.7,20z"/>
+        backgroundColor: nsgtheme.colorBase.c100,
+        buttonText: 'Sign in with Telegram',
+        textStyle: TextStyle(
+          color: nsgtheme.colorBase.c0,
+          fontSize: nsgtheme.sizeM,
+          fontWeight: FontWeight.w600,
+        ),
+        logo: SvgPicture.string(
+          '''<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 240.1 240.1">
+<linearGradient id="Oval_1_" gradientUnits="userSpaceOnUse" x1="-838.041" y1="660.581" x2="-838.041" y2="660.3427" gradientTransform="matrix(1000 0 0 -1000 838161 660581)">
+ <stop offset="0" style="stop-color:#2AABEE"/>
+ <stop offset="1" style="stop-color:#229ED9"/>
+</linearGradient>
+<circle fill-rule="evenodd" clip-rule="evenodd" fill="url(#Oval_1_)" cx="120.1" cy="120.1" r="120.1"/>
+<path fill-rule="evenodd" clip-rule="evenodd" fill="#FFFFFF" d="M54.3,118.8c35-15.2,58.3-25.3,70-30.2 c33.3-13.9,40.3-16.3,44.8-16.4c1,0,3.2,0.2,4.7,1.4c1.2,1,1.5,2.3,1.7,3.3s0.4,3.1,0.2,4.7c-1.8,19-9.6,65.1-13.6,86.3 c-1.7,9-5,12-8.2,12.3c-7,0.6-12.3-4.6-19-9c-10.6-6.9-16.5-11.2-26.8-18c-11.9-7.8-4.2-12.1,2.6-19.1c1.8-1.8,32.5-29.8,33.1-32.3 c0.1-0.3,0.1-1.5-0.6-2.1c-0.7-0.6-1.7-0.4-2.5-0.2c-1.1,0.2-17.9,11.4-50.6,33.5c-4.8,3.3-9.1,4.9-13,4.8 c-4.3-0.1-12.5-2.4-18.7-4.4c-7.5-2.4-13.5-3.7-13-7.9C45.7,123.3,48.7,121.1,54.3,118.8z"/>
 </svg>''',
           semanticsLabel: 'Telegram logo',
-          width: 40,
-          height: 40,
+          width: 20,
+          height: 20,
         ),
       );
 

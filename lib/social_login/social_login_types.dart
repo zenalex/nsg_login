@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:nsg_controls/nsg_control_options.dart';
 import 'package:nsg_data/authorize/nsg_login_model.dart';
 import 'package:nsg_data/authorize/nsg_social_login_response.dart';
 
@@ -25,4 +26,64 @@ abstract class SocialAuthType {
 
   Widget Function(void Function() login) get icon;
   String get socialName;
+}
+
+class SocialLoginButton extends StatelessWidget {
+  const SocialLoginButton({
+    super.key,
+    required this.onTap,
+    required this.logo,
+    this.backgroundColor,
+    required this.buttonText,
+    this.textStyle,
+  });
+
+  final void Function() onTap;
+  final Widget logo;
+  final Color? backgroundColor;
+  final TextStyle? textStyle;
+  final String buttonText;
+
+  @override
+  Widget build(BuildContext context) {
+    return Flexible(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 5),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 220, maxHeight: 44),
+          child: Material(
+            color: backgroundColor ?? nsgtheme.colorBase.c100,
+            borderRadius: BorderRadius.circular(8),
+            child: InkWell(
+              onTap: onTap,
+              borderRadius: BorderRadius.circular(8),
+              child: Center(
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    logo,
+                    const SizedBox(width: 8),
+                    Flexible(
+                      child: Text(
+                        buttonText,
+                        style:
+                            textStyle ??
+                            TextStyle(
+                              color: nsgtheme.colorBase.c0,
+                              fontSize: nsgtheme.sizeM,
+                              fontWeight: FontWeight.w600,
+                            ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
