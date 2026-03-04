@@ -1157,10 +1157,7 @@ class LoginWidgetState extends State<LoginWidget> {
             }
 
             return Padding(
-              padding: const EdgeInsetsGeometry.symmetric(
-                horizontal: 5,
-                vertical: 5,
-              ),
+              padding: const EdgeInsets.symmetric(vertical: 2),
               child: i.icon(onSocialTap),
             );
           }).toList(),

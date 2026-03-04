@@ -46,40 +46,35 @@ class SocialLoginButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Flexible(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 5),
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 220, maxHeight: 44),
-          child: Material(
-            color: backgroundColor ?? nsgtheme.colorBase.c100,
-            borderRadius: BorderRadius.circular(8),
-            child: InkWell(
-              onTap: onTap,
-              borderRadius: BorderRadius.circular(8),
-              child: Center(
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    logo,
-                    const SizedBox(width: 8),
-                    Flexible(
-                      child: Text(
-                        buttonText,
-                        style:
-                            textStyle ??
-                            TextStyle(
-                              color: nsgtheme.colorBase.c0,
-                              fontSize: nsgtheme.sizeM,
-                              fontWeight: FontWeight.w600,
-                            ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 220, maxHeight: 44),
+      child: Material(
+        color: backgroundColor ?? nsgtheme.colorBase.c100,
+        borderRadius: BorderRadius.circular(8),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(8),
+          child: Center(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                logo,
+                const SizedBox(width: 8),
+                Flexible(
+                  child: Text(
+                    buttonText,
+                    style:
+                        textStyle ??
+                        TextStyle(
+                          color: nsgtheme.colorBase.c0,
+                          fontSize: nsgtheme.sizeM,
+                          fontWeight: FontWeight.w600,
+                        ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
-              ),
+              ],
             ),
           ),
         ),
