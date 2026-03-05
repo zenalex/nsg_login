@@ -55,26 +55,27 @@ class SocialLoginButton extends StatelessWidget {
           onTap: onTap,
           borderRadius: BorderRadius.circular(8),
           child: Center(
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                logo,
-                const SizedBox(width: 8),
-                Flexible(
-                  child: Text(
-                    buttonText,
-                    style:
-                        textStyle ??
-                        TextStyle(
-                          color: nsgtheme.colorBase.c0,
-                          fontSize: nsgtheme.sizeM,
-                          fontWeight: FontWeight.w600,
-                        ),
-                    overflow: TextOverflow.ellipsis,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 5),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  logo,
+                  const SizedBox(width: 8),
+                  Flexible(
+                    child: Text(
+                      buttonText,
+                      style: TextStyle(
+                        color: nsgtheme.colorBase.c0,
+                        fontSize: nsgtheme.sizeXL,
+                        fontWeight: FontWeight.w500,
+                      ).merge(textStyle),
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),

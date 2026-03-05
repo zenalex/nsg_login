@@ -8,7 +8,10 @@ import 'package:telegram_login_flutter/telegram_login_flutter.dart';
 abstract class TelegramDefaultAuth extends SocialAuthType {
   String get botId;
   String get botDomain;
-  String get buttonText;
+
+  String get buttonText => 'Sign in with Telegram';
+  TextStyle? get textStyle => null;
+  Color? get backgroundColor => null;
 
   @override
   String get requestFunction => "";
@@ -59,13 +62,9 @@ abstract class TelegramDefaultAuth extends SocialAuthType {
   Widget Function(void Function() login) get icon =>
       (onSocialTap) => SocialLoginButton(
         onTap: onSocialTap,
-        backgroundColor: nsgtheme.colorBase.c100,
-        buttonText: 'Sign in with Telegram',
-        textStyle: TextStyle(
-          color: nsgtheme.colorBase.c0,
-          fontSize: nsgtheme.sizeM,
-          fontWeight: FontWeight.w600,
-        ),
+        backgroundColor: backgroundColor,
+        buttonText: buttonText,
+        textStyle: textStyle,
         logo: SvgPicture.string(
           '''<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 240.1 240.1">
 <linearGradient id="Oval_1_" gradientUnits="userSpaceOnUse" x1="-838.041" y1="660.581" x2="-838.041" y2="660.3427" gradientTransform="matrix(1000 0 0 -1000 838161 660581)">
