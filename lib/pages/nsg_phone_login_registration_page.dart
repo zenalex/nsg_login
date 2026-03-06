@@ -91,7 +91,7 @@ class _NsgLoginregistrationState extends State<NsgLoginRegistrationWidget> {
   bool isLoginSuccessfull = false;
   bool isSMSRequested = false;
   String captchaCode = '';
-  //TODO: заполнять токен!!!!!
+  //TODO_FUTURE: заполнять токен!!!!!
   String firebaseToken = '';
   late NsgLoginType loginType;
 

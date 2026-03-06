@@ -147,7 +147,7 @@ class LoginWidgetState extends State<LoginWidget> {
   Timer? updateTimer;
   NsgLoginState currentState = NsgLoginState.login;
 
-  //TODO: заполнять токен!!!
+  //TODO_FUTURE: заполнять токен!!!
   String firebaseToken = '';
 
   ///Get captcha and send request for SMS
@@ -503,7 +503,7 @@ class LoginWidgetState extends State<LoginWidget> {
             }
           })
           .catchError((e) {
-            if (mounted) {
+            if (mounted && context.mounted) {
               widget.widgetParams.showError(
                 context,
                 widget.widgetParams.textCheckInternet,
@@ -519,12 +519,12 @@ class LoginWidgetState extends State<LoginWidget> {
             firebaseToken: firebaseToken,
           )
           .then((value) {
-            if (mounted) {
+            if (mounted && context.mounted) {
               checkRequestSMSanswer(context, value);
             }
           })
           .catchError((e) {
-            if (mounted) {
+            if (mounted && context.mounted) {
               widget.widgetParams.showError(
                 context,
                 widget.widgetParams.textCheckInternet,
@@ -567,7 +567,7 @@ class LoginWidgetState extends State<LoginWidget> {
   }
 
   void gotoNextPage(BuildContext? context) async {
-    //FIXME: navigation
+    //FIXME_FUTURE`: navigation
     // var result = await Navigator.push<bool>(context!,
     //     MaterialPageRoute(builder: (context) => _getVerificationWidget()));
     // //var result = await Get.to(_getVerificationWidget);
@@ -709,9 +709,8 @@ class LoginWidgetState extends State<LoginWidget> {
             onChanged: (value) {
               password = value;
             },
-            validator: (value) => value == null || value.length < 1
-                ? 'Password is required'
-                : null,
+            validator: (value) =>
+                value == null || value.isEmpty ? 'Password is required' : null,
           ),
         ),
       if (kIsWeb ||
@@ -928,8 +927,9 @@ class LoginWidgetState extends State<LoginWidget> {
   ///при использовании варианта авторизации по паролю, установка нового пароля пользователя
   List<Widget> _verificationStateWidget() {
     ValueNotifier<PasswordStrength?>? passwordListener;
-    if (widget.widgetParams.passwordIndicator != null)
+    if (widget.widgetParams.passwordIndicator != null) {
       passwordListener = ValueNotifier(null);
+    }
     return [
       Padding(
         padding: const EdgeInsets.only(bottom: 10),
@@ -998,14 +998,14 @@ class LoginWidgetState extends State<LoginWidget> {
           child: Padding(
             padding: const EdgeInsets.only(top: 10, bottom: 10),
             child: HoverWidget(
-              hoverChild: Text(
+              hoverChild: const Text(
                 'Try another login method',
-                style: const TextStyle(),
+                style: TextStyle(),
               ),
               onHover: (PointerEnterEvent event) {},
-              child: Text(
+              child: const Text(
                 'Try another login method',
-                style: const TextStyle(decoration: TextDecoration.underline),
+                style: TextStyle(decoration: TextDecoration.underline),
               ),
             ),
           ),
@@ -1077,8 +1077,9 @@ class LoginWidgetState extends State<LoginWidget> {
                 borderRadius: BorderRadius.circular(5),
                 color: (() {
                   for (int i = 0; i < values.length; i++) {
-                    if (values.elementAt(i) == listener.value)
+                    if (values.elementAt(i) == listener.value) {
                       return colors.elementAt(i);
+                    }
                   }
                   return defaultColor ?? Colors.transparent;
                 })(),
@@ -1089,8 +1090,9 @@ class LoginWidgetState extends State<LoginWidget> {
             Text(
               (() {
                 for (int i = 0; i < values.length; i++) {
-                  if (values.elementAt(i) == listener.value)
+                  if (values.elementAt(i) == listener.value) {
                     return messages.elementAt(i);
+                  }
                 }
                 return defaultMessage ?? '';
               })(),
@@ -1184,12 +1186,15 @@ class LoginWidgetState extends State<LoginWidget> {
           register: true,
           newPassword: newPassword,
         )
+        // ignore: use_build_context_synchronously
         .then((value) => checkRequestNewPasswordanswer(context, value))
         .catchError((e) {
-          widget.widgetParams.showError(
-            context,
-            widget.widgetParams.textCheckInternet,
-          );
+          if (context.mounted) {
+            widget.widgetParams.showError(
+              context,
+              widget.widgetParams.textCheckInternet,
+            );
+          }
         });
   }
 
@@ -1212,7 +1217,7 @@ class LoginWidgetState extends State<LoginWidget> {
       return;
     }
     //Если код ответа отличен от нуля - это ошибка, расшифровываем её и показываем пользователю
-    //TODO: проверить остались ли еще попытки ввода кода подтверждения или требуется новый.
+    //TODO_FUTURE: проверить остались ли еще попытки ввода кода подтверждения или требуется новый.
     var errorMessage = widget.widgetParams.errorMessageByStatusCode!(
       answerCode.errorCode,
     );
