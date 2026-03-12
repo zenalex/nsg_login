@@ -6,11 +6,10 @@ import 'package:nsg_login/social_login/default_login_types/default_login_dialog.
 import 'package:nsg_login/social_login/social_login_types.dart';
 import 'package:telegram_login_flutter/telegram_login_flutter.dart';
 
-abstract class TelegramDefaultAuth extends SocialAuthType {
+abstract class MaxDefaultAuth extends SocialAuthType {
   String get botId;
-  String get botDomain;
 
-  String get buttonText => tran.login_via_social("Telegram");
+  String get buttonText => tran.login_via_social("MAX");
   TextStyle? get textStyle => null;
   Color? get backgroundColor => null;
 
@@ -37,10 +36,9 @@ abstract class TelegramDefaultAuth extends SocialAuthType {
     if (context != null) {
       await SocialLoginDialog.show(
         context,
-        builder: (dialogContext) => TelegramLoginWidget(
+        builder: (dialogContext) => MaxLoginWidget(
           title: socialName,
           botId: botId,
-          botDomain: botDomain,
           buttonText: buttonText,
           logo: icon(50),
           onLoginSuccess: (user) {
@@ -48,7 +46,7 @@ abstract class TelegramDefaultAuth extends SocialAuthType {
               code: user.hash.toString(),
               state: user.id.toString(),
               payload: user.toJson(),
-              loginType: 'Telegram',
+              loginType: 'Max',
             );
             Navigator.of(dialogContext).pop();
           },
@@ -70,29 +68,38 @@ abstract class TelegramDefaultAuth extends SocialAuthType {
 
   @override
   Widget icon(size) => SvgPicture.string(
-    '''<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 240.1 240.1">
-<linearGradient id="Oval_1_" gradientUnits="userSpaceOnUse" x1="-838.041" y1="660.581" x2="-838.041" y2="660.3427" gradientTransform="matrix(1000 0 0 -1000 838161 660581)">
- <stop offset="0" style="stop-color:#2AABEE"/>
- <stop offset="1" style="stop-color:#229ED9"/>
+    '''<svg xmlns="http://www.w3.org/2000/svg" xml:space="preserve" viewBox="0 0 1000 1000">
+<defs>
+<linearGradient id="b">
+<stop offset="0" stop-color="#00f"/>
+<stop offset="1" stop-opacity="0"/>
+<stop offset="1" stop-opacity="0"/>
 </linearGradient>
-<circle fill-rule="evenodd" clip-rule="evenodd" fill="url(#Oval_1_)" cx="120.1" cy="120.1" r="120.1"/>
-<path fill-rule="evenodd" clip-rule="evenodd" fill="#FFFFFF" d="M54.3,118.8c35-15.2,58.3-25.3,70-30.2 c33.3-13.9,40.3-16.3,44.8-16.4c1,0,3.2,0.2,4.7,1.4c1.2,1,1.5,2.3,1.7,3.3s0.4,3.1,0.2,4.7c-1.8,19-9.6,65.1-13.6,86.3 c-1.7,9-5,12-8.2,12.3c-7,0.6-12.3-4.6-19-9c-10.6-6.9-16.5-11.2-26.8-18c-11.9-7.8-4.2-12.1,2.6-19.1c1.8-1.8,32.5-29.8,33.1-32.3 c0.1-0.3,0.1-1.5-0.6-2.1c-0.7-0.6-1.7-0.4-2.5-0.2c-1.1,0.2-17.9,11.4-50.6,33.5c-4.8,3.3-9.1,4.9-13,4.8 c-4.3-0.1-12.5-2.4-18.7-4.4c-7.5-2.4-13.5-3.7-13-7.9C45.7,123.3,48.7,121.1,54.3,118.8z"/>
+<linearGradient id="a">
+<stop offset="0" stop-color="#4cf"/>
+<stop offset=".662" stop-color="#53e"/>
+<stop offset="1" stop-color="#93d"/>
+</linearGradient>
+<linearGradient id="c" x1="117.847" x2="1000" y1="760.536" y2="500" gradientUnits="userSpaceOnUse" href="#a"/>
+<radialGradient id="d" cx="-87.392" cy="1166.116" r="500" fx="-87.392" fy="1166.116" gradientTransform="rotate(51.356 1551.478 559.3)scale(2.42703433 1)" gradientUnits="userSpaceOnUse" href="#b"/>
+</defs>
+<rect width="1000" height="1000" fill="url(#c)" ry="249.681"/>
+<rect width="1000" height="1000" fill="url(#d)" ry="249.681"/>
+<path fill="#fff" fill-rule="evenodd" d="M508.211 878.328c-75.007 0-109.864-10.95-170.453-54.75-38.325 49.275-159.686 87.783-164.979 21.9 0-49.456-10.95-91.248-23.36-136.873-14.782-56.21-31.572-118.807-31.572-209.508 0-216.626 177.754-379.597 388.357-379.597 210.785 0 375.947 171.001 375.947 381.604.707 207.346-166.595 376.118-373.94 377.224m3.103-571.585c-102.564-5.292-182.499 65.7-200.201 177.024-14.6 92.162 11.315 204.398 33.397 210.238 10.585 2.555 37.23-18.98 53.837-35.587a189.8 189.8 0 0 0 92.71 33.032c106.273 5.112 197.08-75.794 204.215-181.95 4.154-106.382-77.67-196.486-183.958-202.574Z" clip-rule="evenodd"/>
 </svg>''',
-    semanticsLabel: 'Telegram logo',
+    semanticsLabel: 'MAX logo',
     width: size,
     height: size,
   );
 
   @override
-  String get socialName => "Telegram";
+  String get socialName => "MAX";
 }
 
-class TelegramLoginWidget extends StatelessWidget {
-  const TelegramLoginWidget({
+class MaxLoginWidget extends StatelessWidget {
+  const MaxLoginWidget({
     super.key,
     required this.botId,
-    required this.botDomain,
-    this.timeout,
     required this.buttonText,
     required this.onLoginSuccess,
     this.onAuthError,
@@ -101,10 +108,8 @@ class TelegramLoginWidget extends StatelessWidget {
   });
 
   final String botId;
-  final String botDomain;
   final String buttonText;
   final String? title;
-  final Duration? timeout;
   final Widget? logo;
   final void Function(TelegramUser user) onLoginSuccess;
   final void Function(dynamic error)? onAuthError;
@@ -115,36 +120,7 @@ class TelegramLoginWidget extends StatelessWidget {
       title: title,
       logo: logo,
       buttonText: buttonText,
-      onButtonPressed: (phoneNumber) async {
-        final localTimeout = timeout ?? const Duration(minutes: 1);
-        final telegramAuth = TelegramAuth(
-          phoneNumber: phoneNumber,
-          botId: botId,
-          botDomain: botDomain,
-          timeout: localTimeout,
-        );
-
-        await telegramAuth.launchTelegram();
-        await telegramAuth.initiateLogin();
-
-        final startTime = DateTime.now();
-        var isLoggedIn = false;
-        TelegramUser? user;
-
-        while (DateTime.now().difference(startTime) < localTimeout) {
-          isLoggedIn = await telegramAuth.checkLoginStatus();
-          if (isLoggedIn) {
-            user = await telegramAuth.getUserData();
-            break;
-          }
-          await Future.delayed(const Duration(seconds: 2));
-        }
-        if (isLoggedIn && user != null) {
-          onLoginSuccess(user);
-        } else {
-          throw Exception('Login timeout');
-        }
-      },
+      onButtonPressed: (phoneNumber) async {},
       onAuthError: (error) {
         if (onAuthError != null) {
           onAuthError!(error);

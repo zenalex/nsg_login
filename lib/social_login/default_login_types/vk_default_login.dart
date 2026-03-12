@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_login_vk/flutter_login_vk.dart';
 import 'package:flutter_svg/svg.dart';
-import 'package:nsg_controls/dialog/nsg_future_progress_exception.dart';
-import 'package:nsg_controls/nsg_button.dart';
 import 'package:nsg_controls/nsg_control_options.dart';
 import 'package:nsg_data/authorize/nsg_social_login_response.dart';
 import 'package:nsg_login/helpers.dart';
+import 'package:nsg_login/social_login/default_login_types/default_login_dialog.dart';
 import 'package:nsg_login/social_login/social_login_types.dart';
 
 abstract class VkDefaultAuth extends SocialAuthType {
@@ -33,23 +32,22 @@ abstract class VkDefaultAuth extends SocialAuthType {
   }) async {
     NsgSocialLoginResponse? response;
     if (context != null) {
-      await showDialog<void>(
-        context: context,
-        builder: (dialogContext) => AlertDialog(
-          title: Text(socialName),
-          content: VkLoginWidget(
-            appId: vkAppId,
-            buttonText: buttonText,
-            onLoginSuccess: (user, accessToken) {
-              response = NsgSocialLoginResponse(
-                code: accessToken.secret.toString(),
-                state: accessToken.token,
-                payload: user.toMap()..addAll(accessToken.toMap()),
-                loginType: 'Vk',
-              );
-              Navigator.of(dialogContext).pop();
-            },
-          ),
+      await SocialLoginDialog.show(
+        context,
+        builder: (dialogContext) => VkLoginWidget(
+          appId: vkAppId,
+          title: socialName,
+          logo: icon(50),
+          buttonText: buttonText,
+          onLoginSuccess: (user, accessToken) {
+            response = NsgSocialLoginResponse(
+              code: accessToken.secret.toString(),
+              state: accessToken.token,
+              payload: user.toMap()..addAll(accessToken.toMap()),
+              loginType: 'Vk',
+            );
+            Navigator.of(dialogContext).pop();
+          },
         ),
       );
     }
@@ -96,72 +94,58 @@ class VkLoginWidget extends StatelessWidget {
     required this.buttonText,
     required this.onLoginSuccess,
     this.onAuthError,
+    this.title,
+    this.logo,
   });
 
   final String appId;
-
   final String buttonText;
-
+  final String? title;
+  final Widget? logo;
   final void Function(VKUserProfile user, VKAccessToken token) onLoginSuccess;
   final void Function(dynamic error)? onAuthError;
 
   @override
   Widget build(BuildContext context) {
-    var phoneController = TextEditingController();
-    return Column(
-      children: [
-        TextField(
-          controller: phoneController,
-          decoration: const InputDecoration(
-            labelText: 'Номер телефона (международный формат)',
-            hintText: '+79001234567',
-            border: OutlineInputBorder(),
-          ),
-          keyboardType: TextInputType.phone,
-          autocorrect: false,
-        ),
-        const SizedBox(height: 24),
-        NsgButton(
-          text: buttonText,
-          onTap: () async {
-            await nsgFutureProgressAndException(
-              func: () async {
-                try {
-                  final vkLogin = VKLogin();
-                  await vkLogin.initSdk();
-                  final res = await vkLogin.logIn(
-                    scope: [
-                      VKScope.email,
-                      VKScope.notifications,
-                      VKScope.messages,
-                    ],
-                  );
+    return DefaultSocialLoginDialog(
+      showPhoneInput: false,
+      title: title,
+      logo: logo,
+      buttonText: buttonText,
+      onButtonPressed: (phoneNumber) async {
+        final vkLogin = VKLogin();
+        await vkLogin.initSdk();
+        final res = await vkLogin.logIn(
+          scope: [VKScope.email, VKScope.notifications, VKScope.messages],
+        );
 
-                  if (res.isError) {
-                    throw Exception('Ошибка VK: ${res.asError!.error}');
-                  }
-                  final loginResult = res.asValue!.value;
-                  if (loginResult.isCanceled) {
-                    return;
-                  }
-                  if (loginResult.accessToken == null) {
-                    throw Exception('Не удалось получить токен VK');
-                  }
+        if (res.isError) {
+          throw Exception('Ошибка VK: ${res.asError!.error}');
+        }
+        final loginResult = res.asValue!.value;
+        if (loginResult.isCanceled) {
+          return;
+        }
+        if (loginResult.accessToken == null) {
+          throw Exception('Не удалось получить токен VK');
+        }
 
-                  final profileRes = await vkLogin.getUserProfile();
+        final profileRes = await vkLogin.getUserProfile();
 
-                  if (profileRes.isError || profileRes.asValue?.value == null) {
-                    throw Exception('Не удалось загрузить профиль VK');
-                  }
+        if (profileRes.isError || profileRes.asValue?.value == null) {
+          throw Exception('Не удалось загрузить профиль VK');
+        }
 
-                  final profile = profileRes.asValue!.value!;
-                  onLoginSuccess(profile, loginResult.accessToken!);
-                } finally {}
-              },
-            );
-          },
-        ),
-      ],
+        final profile = profileRes.asValue!.value!;
+        onLoginSuccess(profile, loginResult.accessToken!);
+      },
+      onAuthError: (error) {
+        if (onAuthError != null) {
+          onAuthError!(error);
+        } else {
+          throw error;
+        }
+      },
     );
   }
 }
