@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:nsg_login/l10n/nsg_login_localizations.dart';
 
 class NsgScaffoldService {
   static final scaffoldKey = GlobalKey<ScaffoldMessengerState>();
@@ -6,3 +8,5 @@ class NsgScaffoldService {
     scaffoldKey.currentState?.showSnackBar(SnackBar(content: content));
   }
 }
+
+NsgLoginLocalizations get tran => NsgLoginLocalizations.of(Get.context!)!;

@@ -33,3 +33,5 @@ windows
 macos
 .flutter-plugins-dependencies
 .flutter-plugins
+
+android/local.properties

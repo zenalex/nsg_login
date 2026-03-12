@@ -4,6 +4,7 @@ import 'package:nsg_controls/widgets/nsg_snackbar.dart';
 import 'package:nsg_data/authorize/nsg_login_model.dart';
 import 'package:nsg_data/authorize/nsg_login_params.dart';
 import 'package:nsg_data/password/nsg_login_password_strength.dart';
+import 'package:nsg_login/helpers.dart';
 import 'package:nsg_login/social_login/social_login_types.dart';
 
 class NsgLoginParams implements NsgLoginParamsInterface {
@@ -192,37 +193,39 @@ class NsgLoginParams implements NsgLoginParamsInterface {
     String message;
     switch (statusCode) {
       case 40101:
-        message = 'You have to get captha first';
+        message = tran.you_have_to_enter_captcha_text;
         break;
       case 40102:
-        message = 'Captcha is obsolet. Try again!';
+        message = tran.captcha_is_obsolet_try_again;
         break;
       case 40103:
-        message = 'Captcha text is wrong. Try again!';
+        message = tran.captcha_text_is_wrong_try_again;
         break;
       case 40104:
-        message = 'You have to enter you phone number!';
+        message = tran.you_have_to_enter_you_phone_number;
         break;
       case 40105:
-        message = 'You have to enter captcha text!';
+        message = tran.you_have_to_enter_captcha_text;
         break;
       case 40300:
-        message = 'Wrong security code. Try again!';
+        message = tran.wrong_security_code_try_again;
         break;
       case 40301:
-        message = 'You entered wrong code too many times!';
+        message = tran.you_entered_wrong_code_too_many_times;
         break;
       case 40302:
-        message = 'Security code is obsolete';
+        message = tran.security_code_is_obsolete;
         break;
       case 40303:
-        message = 'You need to create verification code again';
+        message = tran.you_need_to_create_verification_code_again;
         break;
       case 40304:
-        message = 'Wrong user name or password';
+        message = tran.wrong_user_name_or_password;
         break;
       default:
-        message = statusCode == 0 ? '' : 'Error $statusCode is occured';
+        message = statusCode == 0
+            ? ''
+            : tran.error_statuscode_is_occured(statusCode);
     }
     return message;
   }
@@ -235,4 +238,52 @@ class NsgLoginParams implements NsgLoginParamsInterface {
       duration: Duration(seconds: delayed),
     );
   }
+}
+
+class NsgLoginParamsDefault {
+  static NsgLoginParams get defaultParams => NsgLoginParams(
+    loginType: null,
+    email: '',
+    textEnter: tran.login,
+    textBackToEnterPage: tran.return_to_login_page,
+    phoneNumber: '',
+    usePasswordLogin: false,
+    usePhoneLogin: true,
+    useEmailLogin: false,
+    cardSize: 345.0,
+    iconSize: 28.0,
+    buttonSize: 42.0,
+    textRememberUser: tran.remember_user,
+    headerMessage: 'NSG Application',
+    textConfirm: tran.confirm,
+    headerMessageLogin: tran.enter,
+    headerMessageRegistration: tran.registration,
+    headerMessageVerification: tran.enter_code,
+    descriptionMessegeVerificationPhone:
+        'Мы отправили вам код в СМС\nна номер телефона: \n{{phone}}', // 'We sent code in SMS\nto phone number\n{{phone}}',
+    descriptionMessegeVerificationEmail:
+        'Мы отправили вам код в сообщении\nна e-mail: \n{{phone}}', // 'We sent code in SMS\nto phone number\n{{phone}}',
+    textEnterCode: tran.code,
+    textEnterPhone: tran.enter_your_phone_number,
+    textEnterEmail: tran.enter_your_email,
+    textEnterPassword: tran.enter_your_password,
+    textEnterNewPassword: tran.enter_new_password,
+    textEnterPasswordAgain: tran.confirm_password, // 'Confirm password',
+    textResendSms: tran.send_sms_again,
+    textSendSms: tran.send_sms,
+    textEnterCaptcha: tran.enter_captcha_text,
+    textLoginSuccessful: tran.successful_login,
+    textEnterCorrectPhone: tran.please_enter_a_valid_number,
+    textCheckInternet:
+        tran.the_request_could_not_be_completed_check_your_internet_connection,
+    textRegistration: tran.registration_forgot_password,
+    textReturnToLogin: tran.already_registered_login_with_password,
+    textColor: Colors.black,
+    fillColor: Colors.black,
+    disableButtonColor: Colors.blueGrey,
+    headerMessageVisible: false,
+    useCaptcha: true,
+    mainPage: '',
+    socialLoginTypes: const [],
+  );
 }

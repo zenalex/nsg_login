@@ -5,6 +5,7 @@ import 'package:nsg_controls/dialog/nsg_future_progress_exception.dart';
 import 'package:nsg_controls/nsg_button.dart';
 import 'package:nsg_controls/nsg_control_options.dart';
 import 'package:nsg_data/authorize/nsg_social_login_response.dart';
+import 'package:nsg_login/helpers.dart';
 import 'package:nsg_login/social_login/social_login_types.dart';
 
 abstract class VkDefaultAuth extends SocialAuthType {
@@ -56,29 +57,36 @@ abstract class VkDefaultAuth extends SocialAuthType {
   }
 
   @override
-  Widget Function(void Function() login) get icon =>
+  Widget Function(void Function() login) get socialLoginButton =>
       (onSocialTap) => SocialLoginButton(
         onTap: onSocialTap,
         backgroundColor: const Color(0xFF0077FF),
-        buttonText: 'Sign in with Vk',
+        buttonText: tran.login_via_social(tran.vk),
         textStyle: TextStyle(
           color: nsgtheme.colorBase.c0,
           fontSize: nsgtheme.sizeM,
           fontWeight: FontWeight.w600,
         ),
-        logo: SvgPicture.string(
-          '''<svg width="100" height="100" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M0 48C0 25.3726 0 14.0589 7.02944 7.02944C14.0589 0 25.3726 0 48 0H52C74.6274 0 85.9411 0 92.9706 7.02944C100 14.0589 100 25.3726 100 48V52C100 74.6274 100 85.9411 92.9706 92.9706C85.9411 100 74.6274 100 52 100H48C25.3726 100 14.0589 100 7.02944 92.9706C0 85.9411 0 74.6274 0 52V48Z" fill="#0077FF"/>
-                <path d="M53.2083 72.042C30.4167 72.042 17.4168 56.417 16.8751 30.417H28.2917C28.6667 49.5003 37.0833 57.5836 43.7499 59.2503V30.417H54.5002V46.8752C61.0836 46.1669 67.9994 38.667 70.3328 30.417H81.0831C79.2914 40.5837 71.7914 48.0836 66.458 51.1669C71.7914 53.6669 80.3335 60.2086 83.5835 72.042H71.7498C69.2081 64.1253 62.8752 58.0003 54.5002 57.1669V72.042H53.2083Z" fill="white"/>
-                </svg>''',
-          semanticsLabel: 'VK logo',
-          width: 20,
-          height: 20,
-        ),
+        logo: icon(20),
       );
 
   @override
-  String get socialName => "Vk";
+  String get socialName => tran.vk;
+
+  @override
+  Widget icon(size) => SvgPicture.string(
+    '''<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 240.1 240.1">
+<linearGradient id="Oval_1_" gradientUnits="userSpaceOnUse" x1="-838.041" y1="660.581" x2="-838.041" y2="660.3427" gradientTransform="matrix(1000 0 0 -1000 838161 660581)">
+ <stop offset="0" style="stop-color:#2AABEE"/>
+ <stop offset="1" style="stop-color:#229ED9"/>
+</linearGradient>
+<circle fill-rule="evenodd" clip-rule="evenodd" fill="url(#Oval_1_)" cx="120.1" cy="120.1" r="120.1"/>
+<path fill-rule="evenodd" clip-rule="evenodd" fill="#FFFFFF" d="M54.3,118.8c35-15.2,58.3-25.3,70-30.2 c33.3-13.9,40.3-16.3,44.8-16.4c1,0,3.2,0.2,4.7,1.4c1.2,1,1.5,2.3,1.7,3.3s0.4,3.1,0.2,4.7c-1.8,19-9.6,65.1-13.6,86.3 c-1.7,9-5,12-8.2,12.3c-7,0.6-12.3-4.6-19-9c-10.6-6.9-16.5-11.2-26.8-18c-11.9-7.8-4.2-12.1,2.6-19.1c1.8-1.8,32.5-29.8,33.1-32.3 c0.1-0.3,0.1-1.5-0.6-2.1c-0.7-0.6-1.7-0.4-2.5-0.2c-1.1,0.2-17.9,11.4-50.6,33.5c-4.8,3.3-9.1,4.9-13,4.8 c-4.3-0.1-12.5-2.4-18.7-4.4c-7.5-2.4-13.5-3.7-13-7.9C45.7,123.3,48.7,121.1,54.3,118.8z"/>
+</svg>''',
+    semanticsLabel: 'Telegram logo',
+    width: size,
+    height: size,
+  );
 }
 
 class VkLoginWidget extends StatelessWidget {

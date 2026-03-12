@@ -24,8 +24,9 @@ abstract class SocialAuthType {
     BuildContext? context,
   }) async => null;
 
-  Widget Function(void Function() login) get icon;
+  Widget Function(void Function() login) get socialLoginButton;
   String get socialName;
+  Widget icon(double size) => Icon(Icons.login, size: size);
 }
 
 class SocialLoginButton extends StatelessWidget {

@@ -54,7 +54,7 @@ abstract class AppleDefaultAuth extends SocialAuthType {
   }
 
   @override
-  Widget Function(void Function() login) get icon =>
+  Widget Function(void Function() login) get socialLoginButton =>
       (onSocialTap) => ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 220, maxHeight: 44),
         child: SignInWithAppleButton(onPressed: () => onSocialTap()),
