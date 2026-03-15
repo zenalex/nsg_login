@@ -155,8 +155,18 @@ class _NsgSocialLoginWidgetState extends State<NsgSocialLoginWidget> {
       },
       onUpdateVisitedHistory: (controller, url, androidIsReload) async {
         if (url != null) {
+          final uri = Uri.parse(url.toString());
+          final queryParams = uri.queryParameters;
+          final fragmentParams = uri.fragment.isNotEmpty
+              ? Uri.splitQueryString(uri.fragment)
+              : <String, String>{};
+          final params = queryParams.isNotEmpty ? queryParams : fragmentParams;
           var response = NsgSocialLoginResponse()
-            ..fromJson(url.queryParameters);
+            ..fromJson(params);
+          if (kDebugMode) {
+            debugPrint('[NsgSocialLogin] callback url=${uri.origin}${uri.path}');
+            debugPrint('[NsgSocialLogin] hasQuery=${queryParams.isNotEmpty} hasFragment=${fragmentParams.isNotEmpty} code=${response.code.isNotEmpty} state=${response.state.isNotEmpty} isEmpty=${response.isEmpty}');
+          }
           if (response.isEmpty != true && !isVerified) {
             isVerified = true;
             await widget.onVerify(response);
