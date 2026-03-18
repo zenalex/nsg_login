@@ -1140,7 +1140,7 @@ class LoginWidgetState extends State<LoginWidget> {
                             showCloseButton: true,
                           );
                         } else {
-                          await launchUrl(Uri.parse(url));
+                          await launchUrl(Uri.parse(url), webOnlyWindowName: '_self');
                         }
                         if (response != null) {
                           return response!;

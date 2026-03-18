@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:nsg_data/authorize/nsg_social_login_response.dart';
 import 'package:nsg_data/nsg_data_provider.dart';
@@ -55,6 +56,9 @@ class SocialLoginProvider {
         params: social.getVerifyParams(authLink),
       );
 
+      print(
+        '[SocialLoginProvider] processVerify ${social.socialName}: errorCode=${loginResponse.errorCode} isAnonymous=${loginResponse.isAnonymous} token.length=${loginResponse.token.length} isError=${loginResponse.isError} errorMessage=${loginResponse.errorMessage}',
+      );
       if (loginResponse.errorCode == 0 && !loginResponse.isAnonymous) {
         return true;
       }
