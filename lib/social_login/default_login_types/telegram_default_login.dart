@@ -10,6 +10,9 @@ abstract class TelegramDefaultAuth extends SocialAuthType {
   String get botId;
   String get botDomain;
 
+  InputDecoration? get inputDecoration => null;
+  Color? get cursorColor => null;
+
   String get buttonText => tran.login_via_social("Telegram");
   TextStyle? get textStyle => null;
   Color? get backgroundColor => null;
@@ -38,6 +41,8 @@ abstract class TelegramDefaultAuth extends SocialAuthType {
       await SocialLoginDialog.show(
         context,
         builder: (dialogContext) => TelegramLoginWidget(
+          inputDecoration: inputDecoration,
+          cursorColor: cursorColor,
           title: socialName,
           botId: botId,
           botDomain: botDomain,
@@ -98,6 +103,8 @@ class TelegramLoginWidget extends StatelessWidget {
     this.onAuthError,
     this.title,
     this.logo,
+    this.inputDecoration,
+    this.cursorColor,
   });
 
   final String botId;
@@ -108,6 +115,8 @@ class TelegramLoginWidget extends StatelessWidget {
   final Widget? logo;
   final void Function(TelegramUser user) onLoginSuccess;
   final void Function(dynamic error)? onAuthError;
+  final InputDecoration? inputDecoration;
+  final Color? cursorColor;
 
   @override
   Widget build(BuildContext context) {
@@ -115,6 +124,8 @@ class TelegramLoginWidget extends StatelessWidget {
       title: title,
       logo: logo,
       buttonText: buttonText,
+      inputDecoration: inputDecoration,
+      cursorColor: cursorColor,
       onButtonPressed: (phoneNumber) async {
         final localTimeout = timeout ?? const Duration(minutes: 1);
         final telegramAuth = TelegramAuth(

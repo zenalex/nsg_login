@@ -17,6 +17,8 @@ class DefaultSocialLoginDialog extends StatelessWidget {
     this.onAuthError,
     this.phoneController,
     this.showPhoneInput = true,
+    this.inputDecoration,
+    this.cursorColor,
   });
 
   final String? title;
@@ -26,11 +28,14 @@ class DefaultSocialLoginDialog extends StatelessWidget {
   final TextEditingController? phoneController;
   final FutureOr<void> Function(String phoneNumber) onButtonPressed;
   final void Function(dynamic error)? onAuthError;
+  final InputDecoration? inputDecoration;
+  final Color? cursorColor;
 
   @override
   Widget build(BuildContext context) {
     var localPhoneController = phoneController ?? TextEditingController();
     return DefaultSocialLoginDialogBody(
+      inputDecoration: inputDecoration,
       title: title,
       logo: logo,
       body: NsgButton(
@@ -65,41 +70,44 @@ class DefaultSocialLoginDialogBody extends StatelessWidget {
     this.showPhoneInput = true,
     required this.body,
     required this.phoneController,
+    this.inputDecoration,
+    this.cursorColor,
   });
 
   final String? title;
   final Widget? logo;
   final bool showPhoneInput;
   final Widget body;
+  final InputDecoration? inputDecoration;
   final TextEditingController phoneController;
+  final Color? cursorColor;
 
   @override
   Widget build(BuildContext context) {
-    final inputDecoration = InputDecoration(
-      contentPadding: const EdgeInsets.all(10),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(nsgtheme.borderRadius),
-        borderSide: BorderSide(color: nsgtheme.colorTertiary, width: 1.0),
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(nsgtheme.borderRadius),
-        borderSide: BorderSide(color: nsgtheme.colorTertiary, width: 1.0),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(nsgtheme.borderRadius),
-        borderSide: BorderSide(color: nsgtheme.colorText, width: 1.0),
-      ),
-      filled: true,
-      fillColor: nsgtheme.colorBase.b0,
-      errorStyle: const TextStyle(fontSize: 12),
-      hintStyle: TextStyle(color: nsgtheme.colorText.withAlpha(75)),
-    );
+    final inputDecorationBase =
+        inputDecoration ??
+        InputDecoration(
+          contentPadding: const EdgeInsets.all(10),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(nsgtheme.borderRadius),
+            borderSide: BorderSide(color: nsgtheme.colorTertiary, width: 1.0),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(nsgtheme.borderRadius),
+            borderSide: BorderSide(color: nsgtheme.colorTertiary, width: 1.0),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(nsgtheme.borderRadius),
+            borderSide: BorderSide(color: nsgtheme.colorText, width: 1.0),
+          ),
+          filled: true,
+          fillColor: nsgtheme.colorBase.b0,
+          errorStyle: const TextStyle(fontSize: 12),
+          hintStyle: TextStyle(color: nsgtheme.colorText.withAlpha(75)),
+        );
 
     return Container(
-      decoration: BoxDecoration(
-        color: nsgtheme.colorMainBack,
-        borderRadius: BorderRadius.circular(10),
-      ),
+      decoration: BoxDecoration(color: nsgtheme.colorMainBack, borderRadius: BorderRadius.circular(10)),
       padding: const EdgeInsets.all(16),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -110,20 +118,14 @@ class DefaultSocialLoginDialogBody extends StatelessWidget {
               if (logo != null)
                 Padding(
                   padding: const EdgeInsetsGeometry.only(top: 10, bottom: 20),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [logo!],
-                  ),
+                  child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [logo!]),
                 ),
               Row(
                 children: [
                   if (logo == null) Text(title ?? tran.login),
                   const Expanded(child: SizedBox()),
                   InkWell(
-                    child: Icon(
-                      Icons.close,
-                      color: nsgtheme.colorTertiary.withAlpha(127),
-                    ),
+                    child: Icon(Icons.close, color: nsgtheme.colorTertiary.withAlpha(127)),
                     onTap: () => Navigator.of(context).pop(),
                   ),
                 ],
@@ -139,14 +141,12 @@ class DefaultSocialLoginDialogBody extends StatelessWidget {
           if (showPhoneInput)
             TextFormField(
               controller: phoneController,
-              cursorColor: Theme.of(context).primaryColor,
+              cursorColor: cursorColor ?? nsgtheme.colorPrimary,
               keyboardType: TextInputType.phone,
               inputFormatters: [PhoneInputFormatter()],
               style: TextStyle(color: nsgtheme.colorText),
               textAlign: TextAlign.center,
-              decoration: inputDecoration.copyWith(
-                hintText: tran.phone_number_in_international_format,
-              ),
+              decoration: inputDecorationBase.copyWith(hintText: tran.phone_number_in_international_format),
               autofillHints: const [AutofillHints.telephoneNumber],
             ),
           const SizedBox(height: 16),
@@ -158,10 +158,7 @@ class DefaultSocialLoginDialogBody extends StatelessWidget {
 }
 
 class SocialLoginDialog {
-  static FutureOr<T?> show<T>(
-    BuildContext context, {
-    required Widget Function(BuildContext dialogContext) builder,
-  }) {
+  static FutureOr<T?> show<T>(BuildContext context, {required Widget Function(BuildContext dialogContext) builder}) {
     return showDialog<T>(
       context: context,
       builder: (dialogContext) => Dialog(

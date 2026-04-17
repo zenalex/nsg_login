@@ -90,6 +90,12 @@
 @import video_player_avfoundation;
 #endif
 
+#if __has_include(<vkid_flutter_sdk/VkidFlutterSdkPlugin.h>)
+#import <vkid_flutter_sdk/VkidFlutterSdkPlugin.h>
+#else
+@import vkid_flutter_sdk;
+#endif
+
 @implementation GeneratedPluginRegistrant
 
 + (void)registerWithRegistry:(NSObject<FlutterPluginRegistry>*)registry {
@@ -107,6 +113,7 @@
   [SyncfusionFlutterPdfViewerPlugin registerWithRegistrar:[registry registrarForPlugin:@"SyncfusionFlutterPdfViewerPlugin"]];
   [URLLauncherPlugin registerWithRegistrar:[registry registrarForPlugin:@"URLLauncherPlugin"]];
   [FVPVideoPlayerPlugin registerWithRegistrar:[registry registrarForPlugin:@"FVPVideoPlayerPlugin"]];
+  [VkidFlutterSdkPlugin registerWithRegistrar:[registry registrarForPlugin:@"VkidFlutterSdkPlugin"]];
 }
 
 @end
