@@ -90,10 +90,5 @@ public final class GeneratedPluginRegistrant {
     } catch (Exception e) {
       Log.e(TAG, "Error registering plugin video_player_android, io.flutter.plugins.videoplayer.VideoPlayerPlugin", e);
     }
-    try {
-      flutterEngine.getPlugins().add(new com.vk.vkid.flutter.vkid_flutter_sdk.VkidFlutterSdkPlugin());
-    } catch (Exception e) {
-      Log.e(TAG, "Error registering plugin vkid_flutter_sdk, com.vk.vkid.flutter.vkid_flutter_sdk.VkidFlutterSdkPlugin", e);
-    }
   }
 }

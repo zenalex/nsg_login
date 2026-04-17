@@ -10,11 +10,7 @@ class NsgSocialLoginWidget extends StatefulWidget {
 
   /// Коллбек, где нужно вызвать верификацию авторизации
   final Future<void> Function(NsgSocialLoginResponse response) onVerify;
-  const NsgSocialLoginWidget({
-    super.key,
-    required this.authUrl,
-    required this.onVerify,
-  });
+  const NsgSocialLoginWidget({super.key, required this.authUrl, required this.onVerify});
 
   static WebViewEnvironment? webViewEnvironment;
 
@@ -22,14 +18,9 @@ class NsgSocialLoginWidget extends StatefulWidget {
   static void init() async {
     if (!kIsWeb && defaultTargetPlatform == TargetPlatform.windows) {
       final availableVersion = await WebViewEnvironment.getAvailableVersion();
-      assert(
-        availableVersion != null,
-        'Failed to find an installed WebView2 Runtime or non-stable Microsoft Edge installation.',
-      );
+      assert(availableVersion != null, 'Failed to find an installed WebView2 Runtime or non-stable Microsoft Edge installation.');
 
-      webViewEnvironment = await WebViewEnvironment.create(
-        settings: WebViewEnvironmentSettings(),
-      );
+      webViewEnvironment = await WebViewEnvironment.create(settings: WebViewEnvironmentSettings());
     }
 
     if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
@@ -63,12 +54,7 @@ class _NsgSocialLoginWidgetState extends State<NsgSocialLoginWidget> {
   void initState() {
     super.initState();
 
-    pullToRefreshController =
-        kIsWeb ||
-            ![
-              TargetPlatform.iOS,
-              TargetPlatform.android,
-            ].contains(defaultTargetPlatform)
+    pullToRefreshController = kIsWeb || ![TargetPlatform.iOS, TargetPlatform.android].contains(defaultTargetPlatform)
         ? null
         : PullToRefreshController(
             settings: PullToRefreshSettings(color: Colors.blue),
@@ -76,11 +62,7 @@ class _NsgSocialLoginWidgetState extends State<NsgSocialLoginWidget> {
               if (defaultTargetPlatform == TargetPlatform.android) {
                 webViewController?.reload();
               } else if (defaultTargetPlatform == TargetPlatform.iOS) {
-                webViewController?.loadUrl(
-                  urlRequest: URLRequest(
-                    url: await webViewController?.getUrl(),
-                  ),
-                );
+                webViewController?.loadUrl(urlRequest: URLRequest(url: await webViewController?.getUrl()));
               }
             },
           );
@@ -105,10 +87,7 @@ class _NsgSocialLoginWidgetState extends State<NsgSocialLoginWidget> {
         }
       },
       onPermissionRequest: (controller, request) async {
-        return PermissionResponse(
-          resources: request.resources,
-          action: PermissionResponseAction.GRANT,
-        );
+        return PermissionResponse(resources: request.resources, action: PermissionResponseAction.GRANT);
       },
       shouldOverrideUrlLoading: (controller, navigationAction) async {
         var uri = navigationAction.request.url!;
@@ -157,19 +136,19 @@ class _NsgSocialLoginWidgetState extends State<NsgSocialLoginWidget> {
         if (url != null) {
           final uri = Uri.parse(url.toString());
           final queryParams = uri.queryParameters;
-          final fragmentParams = uri.fragment.isNotEmpty
-              ? Uri.splitQueryString(uri.fragment)
-              : <String, String>{};
+          final fragmentParams = uri.fragment.isNotEmpty ? Uri.splitQueryString(uri.fragment) : <String, String>{};
           final params = queryParams.isNotEmpty ? queryParams : fragmentParams;
-          var response = NsgSocialLoginResponse()
-            ..fromJson(params);
+          var response = NsgSocialLoginResponse()..fromJson(params);
           if (kDebugMode) {
             debugPrint('[NsgSocialLogin] callback url=${uri.origin}${uri.path}');
-            debugPrint('[NsgSocialLogin] hasQuery=${queryParams.isNotEmpty} hasFragment=${fragmentParams.isNotEmpty} code=${response.code.isNotEmpty} state=${response.state.isNotEmpty} isEmpty=${response.isEmpty}');
+            debugPrint(
+              '[NsgSocialLogin] hasQuery=${queryParams.isNotEmpty} hasFragment=${fragmentParams.isNotEmpty} code=${response.code.isNotEmpty} state=${response.state.isNotEmpty} isEmpty=${response.isEmpty}',
+            );
           }
           if (response.isEmpty != true && !isVerified) {
             isVerified = true;
             await widget.onVerify(response);
+            if (context.mounted) Navigator.pop(context);
           }
         }
         if (context.mounted) {
