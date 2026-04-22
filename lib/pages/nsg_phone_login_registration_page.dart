@@ -340,7 +340,7 @@ class _NsgLoginregistrationState extends State<NsgLoginRegistrationWidget> {
     String? password,
     required firebaseToken,
   }) {
-    var context = Get.context;
+    var context = NsgNavigator.currentContext;
     if (!_formKey.currentState!.validate()) return;
     setState(() {
       isSMSRequested = true;
