@@ -6,7 +6,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_multi_formatter/flutter_multi_formatter.dart';
-import 'package:get/get.dart';
 import 'package:hovering/hovering.dart';
 import 'package:nsg_controls/nsg_controls.dart';
 import 'package:nsg_data/authorize/nsg_login_model.dart';
@@ -181,7 +180,7 @@ class LoginWidgetState extends State<LoginWidget> {
       hintStyle: TextStyle(color: nsgtheme.colorText.withAlpha(75)),
     );
     widget.loginPage.callback.sendDataPressed = () => doSmsRequest(
-      NsgNavigator.currentContext!,
+      context,
       loginType: loginType,
       password: password,
       firebaseToken: firebaseToken,
@@ -815,7 +814,7 @@ class LoginWidgetState extends State<LoginWidget> {
           widget.widgetParams.phoneNumber = phoneNumber;
           widget.widgetParams.loginType = loginType;
           doSmsRequest(
-            NsgNavigator.currentContext!,
+            context,
             loginType: loginType,
             password: password,
             firebaseToken: firebaseToken,

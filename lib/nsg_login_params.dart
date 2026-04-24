@@ -119,23 +119,27 @@ class NsgLoginParams implements NsgLoginParamsInterface {
     this.headerMessageVerification = 'Введите код', // 'Enter security code',
     this.descriptionMessegeVerificationPhone =
         'Мы отправили вам код в СМС\nна номер телефона: \n{{phone}}', // 'We sent code in SMS\nto phone number\n{{phone}}',
-    this.descriptionMessegeVerificationEmail = 'Мы отправили вам код в сообщении\nна e-mail: \n{{phone}}', // 'We sent code in SMS\nto phone number\n{{phone}}',
+    this.descriptionMessegeVerificationEmail =
+        'Мы отправили вам код в сообщении\nна e-mail: \n{{phone}}', // 'We sent code in SMS\nto phone number\n{{phone}}',
     this.headerMessageStyle,
     this.textEnterCode = 'Код', //'Code',
     this.textEnterPhone = 'Введите номер телефона', //'Enter your phone',
     this.textEnterEmail = 'Введите ваш e-mail', //'Enter your email',
     this.textEnterPassword = 'Введите ваш пароль', // 'Enter you password',
     this.textEnterNewPassword = 'Введите новый пароль', //'Enter new password',
-    this.textEnterPasswordAgain = 'Введите второй раз ваш пароль', // 'Confirm password',
+    this.textEnterPasswordAgain =
+        'Введите второй раз ваш пароль', // 'Confirm password',
     this.textResendSms = 'Отправить СМС заново', //'Send SMS again',
     this.descriptionStyle,
     this.textSendSms = 'Отправить СМС', // 'Send SMS',
     this.textEnterCaptcha = 'Введите текст Капчи', // 'Enter captcha text',
     this.textLoginSuccessful = 'Успешный логин', //'Login successful',
-    this.textEnterCorrectPhone = 'Введите корректный номер', // 'Enter correct phone',
+    this.textEnterCorrectPhone =
+        'Введите корректный номер', // 'Enter correct phone',
     this.textCheckInternet =
         'Невозможно выполнить запрос. Проверьте соединение с интернетом.', //'Cannot compleate request. Check internet connection and repeat.',
-    this.textRegistration = 'Регистрация / Забыл пароль', // 'Enter correct phone',
+    this.textRegistration =
+        'Регистрация / Забыл пароль', // 'Enter correct phone',
     this.textReturnToLogin = 'Уже зарегистрирован / Войти по паролю',
     this.textPhoneField,
     this.cardColor,
@@ -156,9 +160,23 @@ class NsgLoginParams implements NsgLoginParamsInterface {
     this.passwordValidator,
     this.socialLoginTypes = const [],
   }) {
-    headerMessageStyle ??= TextStyle(fontFamily: 'Roboto', fontSize: 20.0, fontWeight: FontWeight.w500, color: ControlOptions.instance.colorText);
-    textPhoneField ??= const TextStyle(fontSize: 18.0, fontFamily: 'Roboto', color: Color.fromRGBO(2, 54, 92, 1.0), fontWeight: FontWeight.normal);
-    headerMessageStyle ??= TextStyle(fontFamily: 'Roboto', fontSize: 18.0, color: ControlOptions.instance.colorText);
+    headerMessageStyle ??= TextStyle(
+      fontFamily: 'Roboto',
+      fontSize: 20.0,
+      fontWeight: FontWeight.w500,
+      color: ControlOptions.instance.colorText,
+    );
+    textPhoneField ??= const TextStyle(
+      fontSize: 18.0,
+      fontFamily: 'Roboto',
+      color: Color.fromRGBO(2, 54, 92, 1.0),
+      fontWeight: FontWeight.normal,
+    );
+    headerMessageStyle ??= TextStyle(
+      fontFamily: 'Roboto',
+      fontSize: 18.0,
+      color: ControlOptions.instance.colorText,
+    );
     cardColor ??= Colors.white;
     sendSmsButtonColor ??= const Color.fromRGBO(0, 101, 175, 1.0);
     sendSmsBorderColor ??= const Color.fromRGBO(0, 301, 175, 1.0);
@@ -213,7 +231,9 @@ class NsgLoginParams implements NsgLoginParamsInterface {
         message = tran.wrong_user_name_or_password;
         break;
       default:
-        message = statusCode == 0 ? '' : tran.error_statuscode_is_occured(statusCode);
+        message = statusCode == 0
+            ? ''
+            : tran.error_statuscode_is_occured(statusCode);
     }
     return message;
   }
@@ -223,6 +243,7 @@ class NsgLoginParams implements NsgLoginParamsInterface {
     nsgSnackbar(
       type: NsgSnarkBarType.error,
       text: message,
+      context: context,
       duration: Duration(seconds: delayed),
     );
   }
@@ -247,8 +268,10 @@ class NsgLoginParamsDefault {
     headerMessageLogin: tran.enter,
     headerMessageRegistration: tran.registration,
     headerMessageVerification: tran.enter_code,
-    descriptionMessegeVerificationPhone: 'Мы отправили вам код в СМС\nна номер телефона: \n{{phone}}', // 'We sent code in SMS\nto phone number\n{{phone}}',
-    descriptionMessegeVerificationEmail: 'Мы отправили вам код в сообщении\nна e-mail: \n{{phone}}', // 'We sent code in SMS\nto phone number\n{{phone}}',
+    descriptionMessegeVerificationPhone:
+        'Мы отправили вам код в СМС\nна номер телефона: \n{{phone}}', // 'We sent code in SMS\nto phone number\n{{phone}}',
+    descriptionMessegeVerificationEmail:
+        'Мы отправили вам код в сообщении\nна e-mail: \n{{phone}}', // 'We sent code in SMS\nto phone number\n{{phone}}',
     textEnterCode: tran.code,
     textEnterPhone: tran.enter_your_phone_number,
     textEnterEmail: tran.enter_your_email,
@@ -260,7 +283,8 @@ class NsgLoginParamsDefault {
     textEnterCaptcha: tran.enter_captcha_text,
     textLoginSuccessful: tran.successful_login,
     textEnterCorrectPhone: tran.please_enter_a_valid_number,
-    textCheckInternet: tran.the_request_could_not_be_completed_check_your_internet_connection,
+    textCheckInternet:
+        tran.the_request_could_not_be_completed_check_your_internet_connection,
     textRegistration: tran.registration_forgot_password,
     textReturnToLogin: tran.already_registered_login_with_password,
     textColor: Colors.black,
