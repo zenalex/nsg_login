@@ -849,7 +849,7 @@ class LoginWidgetState extends State<LoginWidget> {
                 ),
               ),
             )
-          : Padding(padding: const EdgeInsets.only(top: 10)),
+          : const Padding(padding: EdgeInsets.only(top: 10)),
       if (widget.widgetParams.socialLoginTypes.isNotEmpty) _socialLogin(),
     ];
   }
