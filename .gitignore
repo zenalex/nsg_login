@@ -35,3 +35,5 @@ macos
 .flutter-plugins
 
 android/local.properties
+android/app/src/main/java/io/flutter/plugins/GeneratedPluginRegistrant.java
+ios/Runner/GeneratedPluginRegistrant.m
