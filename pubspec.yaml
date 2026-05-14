@@ -25,12 +25,17 @@ dependencies:
     sdk: flutter
   # nsg_data: ^1.0.0
   # nsg_controls: ^1.0.0-beta.1
+  # git-зависимости по умолчанию (для CI и встраивания в потребителях через git).
+  # Локальная разработка: pubspec_overrides.yaml с path: ../nsg_data и ../nsg_controls
+  # — см. .example.
   nsg_data:
-    path:
-      ../nsg_data
+    git:
+      url: https://github.com/zenalex/nsg_data.git
+      ref: master
   nsg_controls:
-    path:
-      ../nsg_controls
+    git:
+      url: https://github.com/zenalex/nsg_controls.git
+      ref: master
 
   get: ^5.0.0-beta.52
   hovering: ^1.0.4
