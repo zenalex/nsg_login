@@ -14,6 +14,7 @@ import 'package:nsg_data/authorize/nsg_social_login_response.dart';
 import 'package:nsg_data/nsg_data.dart';
 import 'package:nsg_data/password/nsg_login_password_strength.dart';
 import 'package:nsg_login/helpers.dart';
+import 'package:nsg_login/main_login/main_login_type.dart';
 import 'package:nsg_login/nsg_login_params.dart';
 import 'package:nsg_login/pages/nsg_login_state.dart';
 import 'package:nsg_controls/dialog/show_nsg_dialog.dart';
@@ -1139,74 +1140,79 @@ class LoginWidgetState extends State<LoginWidget> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           mainAxisSize: MainAxisSize.min,
-          children: widget.widgetParams.socialLoginTypes.map((i) {
-            Future<void> onSocialTap() async {
-              nsgFutureProgressAndException(
-                func: () async {
-                  try {
-                    var success = await socialProvider.processLogin(
-                      i,
-                      context: context,
-                      onAuthLink: (url) async {
-                        NsgSocialLoginResponse? response;
-                        if (!kIsWeb) {
-                          await showNsgDialog(
-                            contentPadding: EdgeInsets.zero,
-                            context: context,
-                            title: tran.authorization_social(i.socialName),
-                            child: SizedBox(
-                              width: MediaQuery.of(context).size.width * 0.8,
-                              height: MediaQuery.of(context).size.height * 0.6,
-                              child: NsgSocialLoginWidget(
-                                authUrl: url,
-                                onVerify: (res) async {
-                                  response = res;
-                                },
-                              ),
-                            ),
-                            buttons: [],
-                            showCloseButton: true,
-                          );
-                        } else {
-                          await launchUrl(
-                            Uri.parse(url),
-                            webOnlyWindowName: '_self',
-                          );
-                        }
-                        if (response != null) {
-                          return response!;
-                        }
-                        return null;
-                      },
-                    );
-                    if (success) {
-                      if (widget.widgetParams.onLogin != null) {
-                        widget.widgetParams.onLogin!();
-                      } else {
-                        NsgNavigator.instance.offAndToPage(
-                          widget.widgetParams.mainPage,
+          children: widget.widgetParams.socialLoginTypes
+              .where((i) => i is! MainLoginType)
+              .map((i) {
+                Future<void> onSocialTap() async {
+                  nsgFutureProgressAndException(
+                    func: () async {
+                      try {
+                        var success = await socialProvider.processLogin(
+                          i,
+                          context: context,
+                          onAuthLink: (url) async {
+                            NsgSocialLoginResponse? response;
+                            if (!kIsWeb) {
+                              await showNsgDialog(
+                                contentPadding: EdgeInsets.zero,
+                                context: context,
+                                title: tran.authorization_social(i.socialName),
+                                child: SizedBox(
+                                  width:
+                                      MediaQuery.of(context).size.width * 0.8,
+                                  height:
+                                      MediaQuery.of(context).size.height * 0.6,
+                                  child: NsgSocialLoginWidget(
+                                    authUrl: url,
+                                    onVerify: (res) async {
+                                      response = res;
+                                    },
+                                  ),
+                                ),
+                                buttons: [],
+                                showCloseButton: true,
+                              );
+                            } else {
+                              await launchUrl(
+                                Uri.parse(url),
+                                webOnlyWindowName: '_self',
+                              );
+                            }
+                            if (response != null) {
+                              return response!;
+                            }
+                            return null;
+                          },
                         );
+                        if (success) {
+                          if (widget.widgetParams.onLogin != null) {
+                            widget.widgetParams.onLogin!();
+                          } else {
+                            NsgNavigator.instance.offAndToPage(
+                              widget.widgetParams.mainPage,
+                            );
+                          }
+                        }
+                      } catch (e) {
+                        debugPrint('Social login error: $e');
+                        if (context.mounted) {
+                          nsgSnackbar(
+                            text: e.toString(),
+                            type: NsgSnarkBarType.error,
+                          );
+                        }
+                        rethrow;
                       }
-                    }
-                  } catch (e) {
-                    debugPrint('Social login error: $e');
-                    if (context.mounted) {
-                      nsgSnackbar(
-                        text: e.toString(),
-                        type: NsgSnarkBarType.error,
-                      );
-                    }
-                    rethrow;
-                  }
-                },
-              );
-            }
+                    },
+                  );
+                }
 
-            return Padding(
-              padding: const EdgeInsets.symmetric(vertical: 2),
-              child: i.socialLoginButton(onSocialTap),
-            );
-          }).toList(),
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 2),
+                  child: i.socialLoginButton(onSocialTap),
+                );
+              })
+              .toList(),
         ),
       ),
     );
