@@ -140,4 +140,20 @@ class NsgLoginLocalizationsEn extends NsgLoginLocalizations {
   String authorization_social(Object social) {
     return 'Authorization: $social';
   }
+
+  @override
+  String get try_another_login_method => 'Try another login method';
+
+  @override
+  String get password_is_empty => 'Password is empty';
+
+  @override
+  String get enter_confirmation_code_from_message =>
+      'Enter confirmation code from message';
+
+  @override
+  String get password_is_required => 'Password is required';
+
+  @override
+  String get passwords_mistmatch => 'Passwords mistmatch';
 }

@@ -36,5 +36,10 @@
   "phone_number_in_international_format": "Номер телефона в международном формате",
   "login_via_social": "Войти через {social}",
   "vk": "ВК",
-  "authorization_social": "Авторизация: {social}"
+  "authorization_social": "Авторизация: {social}",
+  "try_another_login_method": "Попробуйте другой способ входа",
+  "password_is_empty": "Пароль пуст",
+  "enter_confirmation_code_from_message": "Введите код подтверждения из сообщения",
+  "password_is_required": "Требуется заполнить пароль",
+  "passwords_mistmatch": "Пароли не совпадают"
 }

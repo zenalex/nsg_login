@@ -328,6 +328,36 @@ abstract class NsgLoginLocalizations {
   /// In ru, this message translates to:
   /// **'Авторизация: {social}'**
   String authorization_social(Object social);
+
+  /// No description provided for @try_another_login_method.
+  ///
+  /// In ru, this message translates to:
+  /// **'Попробуйте другой способ входа'**
+  String get try_another_login_method;
+
+  /// No description provided for @password_is_empty.
+  ///
+  /// In ru, this message translates to:
+  /// **'Пароль пуст'**
+  String get password_is_empty;
+
+  /// No description provided for @enter_confirmation_code_from_message.
+  ///
+  /// In ru, this message translates to:
+  /// **'Введите код подтверждения из сообщения'**
+  String get enter_confirmation_code_from_message;
+
+  /// No description provided for @password_is_required.
+  ///
+  /// In ru, this message translates to:
+  /// **'Требуется заполнить пароль'**
+  String get password_is_required;
+
+  /// No description provided for @passwords_mistmatch.
+  ///
+  /// In ru, this message translates to:
+  /// **'Пароли не совпадают'**
+  String get passwords_mistmatch;
 }
 
 class _NsgLoginLocalizationsDelegate

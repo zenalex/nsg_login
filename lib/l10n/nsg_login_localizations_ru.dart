@@ -143,4 +143,20 @@ class NsgLoginLocalizationsRu extends NsgLoginLocalizations {
   String authorization_social(Object social) {
     return 'Авторизация: $social';
   }
+
+  @override
+  String get try_another_login_method => 'Попробуйте другой способ входа';
+
+  @override
+  String get password_is_empty => 'Пароль пуст';
+
+  @override
+  String get enter_confirmation_code_from_message =>
+      'Введите код подтверждения из сообщения';
+
+  @override
+  String get password_is_required => 'Требуется заполнить пароль';
+
+  @override
+  String get passwords_mistmatch => 'Пароли не совпадают';
 }

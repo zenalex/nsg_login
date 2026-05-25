@@ -45,8 +45,9 @@ class LoginWidgetNew extends StatefulWidget {
 }
 
 class _LoginWidgetNewState extends State<LoginWidgetNew> {
-  late final SocialLoginProvider socialProvider =
-      SocialLoginProvider(widget.provider);
+  late final SocialLoginProvider socialProvider = SocialLoginProvider(
+    widget.provider,
+  );
 
   late InputDecoration decor;
   Image? captureImage;
@@ -77,6 +78,8 @@ class _LoginWidgetNewState extends State<LoginWidgetNew> {
   final _formKey = GlobalKey<FormState>();
   TextEditingController? _captchaController;
 
+  ValueNotifier<PasswordStrength?>? passwordListener;
+
   @override
   void initState() {
     super.initState();
@@ -102,11 +105,11 @@ class _LoginWidgetNewState extends State<LoginWidgetNew> {
       alignLabelWithHint: true,
     );
     widget.loginPage.callback.sendDataPressed = () => doSmsRequest(
-          context,
-          loginType: loginType,
-          password: password,
-          firebaseToken: firebaseToken,
-        );
+      context,
+      loginType: loginType,
+      password: password,
+      firebaseToken: firebaseToken,
+    );
     if (widget.widgetParams.useEmailLogin) {
       loginType = NsgLoginType.email;
     } else {
@@ -137,10 +140,7 @@ class _LoginWidgetNewState extends State<LoginWidgetNew> {
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.center,
               mainAxisSize: MainAxisSize.min,
-              children: [
-                widget.loginPage.getLogo(),
-                _getContext(context),
-              ],
+              children: [widget.loginPage.getLogo(), _getContext(context)],
             ),
           ),
         ),
@@ -288,8 +288,7 @@ class _LoginWidgetNewState extends State<LoginWidgetNew> {
             ),
             Expanded(
               child: _tabCell(
-                label: widget
-                    .widgetParams.headerMessageRegistration
+                label: widget.widgetParams.headerMessageRegistration
                     .toUpperCase(),
                 selected: currentState == NsgLoginState.registration,
                 onTap: () {
@@ -311,7 +310,9 @@ class _LoginWidgetNewState extends State<LoginWidgetNew> {
     required VoidCallback onTap,
   }) {
     return Material(
-      color: selected ? nsgtheme.colorPrimary : nsgtheme.colorSecondary,
+      color: selected
+          ? nsgtheme.colorPrimary
+          : nsgtheme.colorSecondary.c0, //TODO: Поправить цвета
       child: InkWell(
         onTap: onTap,
         child: Padding(
@@ -407,10 +408,7 @@ class _LoginWidgetNewState extends State<LoginWidgetNew> {
     );
   }
 
-  Widget _labeledField({
-    required String? label,
-    required Widget field,
-  }) {
+  Widget _labeledField({required String? label, required Widget field}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -584,10 +582,7 @@ class _LoginWidgetNewState extends State<LoginWidgetNew> {
         isCaptchaLoading = false;
         updateTimer?.cancel();
         secondsLeft = 120;
-        updateTimer = Timer.periodic(
-          const Duration(seconds: 1),
-          captchaTimer,
-        );
+        updateTimer = Timer.periodic(const Duration(seconds: 1), captchaTimer);
       }),
     );
   }
@@ -611,9 +606,7 @@ class _LoginWidgetNewState extends State<LoginWidgetNew> {
       child: Card(
         margin: const EdgeInsets.symmetric(horizontal: 15),
         color: widget.widgetParams.cardColor,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 15),
           child: Row(
@@ -694,6 +687,7 @@ class _LoginWidgetNewState extends State<LoginWidgetNew> {
           _labeledField(
             label: null,
             field: TextFormField(
+              key: GlobalKey(),
               cursorColor: Theme.of(context).primaryColor,
               keyboardType: TextInputType.phone,
               inputFormatters: [phoneFormatter],
@@ -714,6 +708,7 @@ class _LoginWidgetNewState extends State<LoginWidgetNew> {
           _labeledField(
             label: null,
             field: TextFormField(
+              key: GlobalKey(),
               cursorColor: Theme.of(context).primaryColor,
               keyboardType: TextInputType.emailAddress,
               style: _fieldTextStyle,
@@ -730,6 +725,7 @@ class _LoginWidgetNewState extends State<LoginWidgetNew> {
         Padding(
           padding: const EdgeInsets.only(top: 10),
           child: TextFormField(
+            key: GlobalKey(),
             obscureText: _obscureLoginPassword,
             cursorColor: Theme.of(context).primaryColor,
             keyboardType: TextInputType.visiblePassword,
@@ -751,8 +747,9 @@ class _LoginWidgetNewState extends State<LoginWidgetNew> {
               ),
             ),
             onChanged: (value) => password = value,
-            validator: (value) =>
-                value == null || value.isEmpty ? 'Password is required' : null,
+            validator: (value) => value == null || value.isEmpty
+                ? tran.password_is_required
+                : null,
           ),
         ),
       if (widget.widgetParams.usePasswordLogin &&
@@ -763,19 +760,14 @@ class _LoginWidgetNewState extends State<LoginWidgetNew> {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               if (kIsWeb ||
-                  (!Platform.isAndroid &&
-                      !Platform.isIOS &&
-                      !Platform.isMacOS))
+                  (!Platform.isAndroid && !Platform.isIOS && !Platform.isMacOS))
                 Expanded(child: widget.loginPage.getRememberMeCheckbox())
               else
                 const Spacer(),
-              _link(
-                widget.widgetParams.textRegistration,
-                () {
-                  currentState = NsgLoginState.registration;
-                  setState(() {});
-                },
-              ),
+              _link(widget.widgetParams.textRegistration, () {
+                currentState = NsgLoginState.registration;
+                setState(() {});
+              }),
             ],
           ),
         )
@@ -829,6 +821,7 @@ class _LoginWidgetNewState extends State<LoginWidgetNew> {
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 10),
           child: TextFormField(
+            key: GlobalKey(),
             cursorColor: Theme.of(context).primaryColor,
             controller: _captchaController,
             textAlign: TextAlign.start,
@@ -867,6 +860,10 @@ class _LoginWidgetNewState extends State<LoginWidgetNew> {
   }
 
   List<Widget> _registrationStateWidget(BuildContext context) {
+    if (passwordListener == null &&
+        widget.widgetParams.passwordIndicator != null) {
+      passwordListener = ValueNotifier(null);
+    }
     return [
       if (widget.widgetParams.usePhoneLogin &&
           widget.widgetParams.useEmailLogin)
@@ -904,6 +901,7 @@ class _LoginWidgetNewState extends State<LoginWidgetNew> {
           Padding(
             padding: const EdgeInsets.only(bottom: 10),
             child: TextFormField(
+              key: GlobalKey(),
               cursorColor: Theme.of(context).primaryColor,
               keyboardType: TextInputType.phone,
               inputFormatters: [phoneFormatter],
@@ -924,6 +922,7 @@ class _LoginWidgetNewState extends State<LoginWidgetNew> {
           Padding(
             padding: const EdgeInsets.only(bottom: 10),
             child: TextFormField(
+              key: GlobalKey(),
               cursorColor: Theme.of(context).primaryColor,
               keyboardType: TextInputType.emailAddress,
               style: _fieldTextStyle,
@@ -934,21 +933,6 @@ class _LoginWidgetNewState extends State<LoginWidgetNew> {
               initialValue: email,
               onChanged: (value) => email = value,
               validator: (value) => null,
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.only(bottom: 12),
-            child: Text(
-              widget.widgetParams.interpolate(
-                widget.widgetParams.descriptionMessegeVerificationEmail,
-                params: {'phone': email},
-              ),
-              style: widget.widgetParams.descriptionStyle ??
-                  TextStyle(
-                    fontSize: nsgtheme.sizeM,
-                    color: nsgtheme.colorText.withAlpha(180),
-                    height: 1.35,
-                  ),
             ),
           ),
         ],
@@ -971,10 +955,6 @@ class _LoginWidgetNewState extends State<LoginWidgetNew> {
   }
 
   List<Widget> _verificationStateWidget(BuildContext context) {
-    ValueNotifier<PasswordStrength?>? passwordListener;
-    if (widget.widgetParams.passwordIndicator != null) {
-      passwordListener = ValueNotifier(null);
-    }
     return [
       Padding(
         padding: const EdgeInsets.only(bottom: 10),
@@ -991,13 +971,31 @@ class _LoginWidgetNewState extends State<LoginWidgetNew> {
         keyboardType: TextInputType.number,
         onChanged: (value) => securityCode = value,
         validator: (value) => value == null || value.length < 6
-            ? 'Enter confirmation code from message'
+            ? tran.enter_confirmation_code_from_message
             : null,
+      ),
+      Padding(
+        padding: const EdgeInsets.only(bottom: 12),
+        child: Text(
+          loginType == NsgLoginType.email
+              ? tran.we_sent_you_the_code_in_a_message_by_email_phone(email)
+              : tran.we_sent_you_a_code_via_sms_to_your_phone_number(
+                  phoneNumber,
+                ),
+          style:
+              widget.widgetParams.descriptionStyle ??
+              TextStyle(
+                fontSize: nsgtheme.sizeM,
+                color: nsgtheme.colorText.withAlpha(180),
+                height: 1.35,
+              ),
+        ),
       ),
       if (widget.widgetParams.usePasswordLogin) ...[
         _labeledField(
           label: widget.widgetParams.textEnterNewPassword,
           field: TextFormField(
+            key: GlobalKey(),
             obscureText: _obscureNewPassword1,
             cursorColor: Theme.of(context).primaryColor,
             keyboardType: TextInputType.visiblePassword,
@@ -1013,9 +1011,9 @@ class _LoginWidgetNewState extends State<LoginWidgetNew> {
                   color: nsgtheme.colorText.withAlpha(160),
                   size: 22,
                 ),
-                onPressed: () => setState(
-                  () => _obscureNewPassword1 = !_obscureNewPassword1,
-                ),
+                onPressed: () => setState(() {
+                  _obscureNewPassword1 = !_obscureNewPassword1;
+                }),
               ),
             ),
             initialValue: newPassword1,
@@ -1032,9 +1030,11 @@ class _LoginWidgetNewState extends State<LoginWidgetNew> {
             ),
           ),
         ),
+        const Padding(padding: EdgeInsets.only(bottom: 10)),
         _labeledField(
           label: null,
           field: TextFormField(
+            key: GlobalKey(),
             obscureText: _obscureNewPassword2,
             cursorColor: Theme.of(context).primaryColor,
             keyboardType: TextInputType.visiblePassword,
@@ -1059,7 +1059,7 @@ class _LoginWidgetNewState extends State<LoginWidgetNew> {
             onChanged: (value) => newPassword2 = value,
             validator: (v) => _stackedInputValidator(
               v,
-              (x) => x == newPassword1 ? null : 'Passwords mistmatch',
+              (x) => x == newPassword1 ? null : tran.passwords_mistmatch,
             ),
           ),
         ),
@@ -1074,7 +1074,7 @@ class _LoginWidgetNewState extends State<LoginWidgetNew> {
             values: PasswordStrength.values,
             messages: passwordStrengthMessages,
             defaultColor: Colors.blueGrey,
-            defaultMessage: 'Password is empty',
+            defaultMessage: tran.password_is_empty,
           ),
         ),
       Padding(
@@ -1087,14 +1087,14 @@ class _LoginWidgetNewState extends State<LoginWidgetNew> {
           child: Padding(
             padding: const EdgeInsets.only(top: 10, bottom: 10),
             child: HoverWidget(
-              hoverChild: const Text(
-                'Try another login method',
-                style: TextStyle(),
+              hoverChild: Text(
+                tran.try_another_login_method,
+                style: const TextStyle(),
               ),
               onHover: (PointerEnterEvent event) {},
-              child: const Text(
-                'Try another login method',
-                style: TextStyle(decoration: TextDecoration.underline),
+              child: Text(
+                tran.try_another_login_method,
+                style: const TextStyle(decoration: TextDecoration.underline),
               ),
             ),
           ),
@@ -1126,6 +1126,7 @@ class _LoginWidgetNewState extends State<LoginWidgetNew> {
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: TextFormField(
+        key: GlobalKey(),
         autofillHints: autofillHints,
         cursorColor: Theme.of(context).primaryColor,
         keyboardType: keyboardType,
@@ -1216,8 +1217,7 @@ class _LoginWidgetNewState extends State<LoginWidgetNew> {
                             title: tran.authorization_social(i.socialName),
                             child: SizedBox(
                               width: MediaQuery.of(context).size.width * 0.8,
-                              height:
-                                  MediaQuery.of(context).size.height * 0.6,
+                              height: MediaQuery.of(context).size.height * 0.6,
                               child: NsgSocialLoginWidget(
                                 authUrl: url,
                                 onVerify: (res) async {

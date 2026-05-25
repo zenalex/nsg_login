@@ -18,9 +18,9 @@ class NsgLoginPageNew extends StatelessWidget {
   final NsgLoginParams Function() widgetParams;
   final String? initialEmail;
 
-  NsgLoginPageNew({
+  NsgLoginPageNew(
+    this.provider, {
     super.key,
-    required this.provider,
     required this.widgetParams,
     this.initialEmail,
   });

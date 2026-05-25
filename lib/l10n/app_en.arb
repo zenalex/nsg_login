@@ -36,5 +36,10 @@
   "phone_number_in_international_format": "Phone number in international format",
   "login_via_social": "Login via {social}",
   "vk": "VK",
-  "authorization_social": "Authorization: {social}"
+  "authorization_social": "Authorization: {social}",
+  "try_another_login_method": "Try another login method",
+  "password_is_empty": "Password is empty",
+  "enter_confirmation_code_from_message": "Enter confirmation code from message",
+  "password_is_required": "Password is required",
+  "passwords_mistmatch": "Passwords mistmatch"
 }
