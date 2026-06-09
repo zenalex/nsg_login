@@ -46,6 +46,7 @@ dependencies:
   url_launcher: ^6.3.2
   sign_in_with_apple: ^6.1.4
   crypto: ^3.0.6
+  http: ^1.4.0
   telegram_login_flutter: ^1.0.1
   flutter_login_vk: ^3.0.0
 

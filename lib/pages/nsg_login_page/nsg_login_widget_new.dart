@@ -8,9 +8,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_multi_formatter/flutter_multi_formatter.dart';
 import 'package:hovering/hovering.dart';
-import 'package:nsg_controls/dialog/nsg_future_progress_exception.dart';
 import 'package:nsg_controls/dialog/show_nsg_dialog.dart';
-import 'package:nsg_controls/nsg_control_options.dart';
 import 'package:nsg_controls/nsg_controls.dart';
 import 'package:nsg_controls/widgets/nsg_snackbar.dart';
 import 'package:nsg_data/authorize/nsg_login_model.dart';
@@ -312,7 +310,7 @@ class _LoginWidgetNewState extends State<LoginWidgetNew> {
     return Material(
       color: selected
           ? nsgtheme.colorPrimary
-          : nsgtheme.colorSecondary.c0, //TODO: Поправить цвета
+          : nsgtheme.colorSecondary, //TODO: Поправить цвета
       child: InkWell(
         onTap: onTap,
         child: Padding(

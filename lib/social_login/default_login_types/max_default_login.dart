@@ -3,11 +3,13 @@ import 'package:flutter_svg/svg.dart';
 import 'package:nsg_data/authorize/nsg_social_login_response.dart';
 import 'package:nsg_login/helpers.dart';
 import 'package:nsg_login/social_login/default_login_types/default_login_dialog.dart';
+import 'package:nsg_login/social_login/max_auth/max_auth.dart';
+import 'package:nsg_login/social_login/max_auth/max_user.dart';
 import 'package:nsg_login/social_login/social_login_types.dart';
-import 'package:telegram_login_flutter/telegram_login_flutter.dart';
 
 abstract class MaxDefaultAuth extends SocialAuthType {
   String get botId;
+  String get botDomain;
 
   String get buttonText => tran.login_via_social("MAX");
   TextStyle? get textStyle => null;
@@ -39,6 +41,7 @@ abstract class MaxDefaultAuth extends SocialAuthType {
         builder: (dialogContext) => MaxLoginWidget(
           title: socialName,
           botId: botId,
+          botDomain: botDomain,
           buttonText: buttonText,
           logo: icon(50),
           onLoginSuccess: (user) {
@@ -100,6 +103,8 @@ class MaxLoginWidget extends StatelessWidget {
   const MaxLoginWidget({
     super.key,
     required this.botId,
+    required this.botDomain,
+    this.timeout,
     required this.buttonText,
     required this.onLoginSuccess,
     this.onAuthError,
@@ -108,10 +113,12 @@ class MaxLoginWidget extends StatelessWidget {
   });
 
   final String botId;
+  final String botDomain;
   final String buttonText;
   final String? title;
+  final Duration? timeout;
   final Widget? logo;
-  final void Function(TelegramUser user) onLoginSuccess;
+  final void Function(MaxUser user) onLoginSuccess;
   final void Function(dynamic error)? onAuthError;
 
   @override
@@ -120,7 +127,36 @@ class MaxLoginWidget extends StatelessWidget {
       title: title,
       logo: logo,
       buttonText: buttonText,
-      onButtonPressed: (phoneNumber) async {},
+      onButtonPressed: (phoneNumber) async {
+        final localTimeout = timeout ?? const Duration(minutes: 1);
+        final maxAuth = MaxAuth(
+          phoneNumber: phoneNumber,
+          botId: botId,
+          botDomain: botDomain,
+          timeout: localTimeout,
+        );
+
+        await maxAuth.launchMax();
+        await maxAuth.initiateLogin();
+
+        final startTime = DateTime.now();
+        var isLoggedIn = false;
+        MaxUser? user;
+
+        while (DateTime.now().difference(startTime) < localTimeout) {
+          isLoggedIn = await maxAuth.checkLoginStatus();
+          if (isLoggedIn) {
+            user = await maxAuth.getUserData();
+            break;
+          }
+          await Future.delayed(const Duration(seconds: 2));
+        }
+        if (isLoggedIn && user != null) {
+          onLoginSuccess(user);
+        } else {
+          throw Exception('Login timeout');
+        }
+      },
       onAuthError: (error) {
         if (onAuthError != null) {
           onAuthError!(error);
