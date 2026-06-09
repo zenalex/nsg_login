@@ -127,40 +127,56 @@ class TelegramLoginWidget extends StatelessWidget {
       inputDecoration: inputDecoration,
       cursorColor: cursorColor,
       onButtonPressed: (phoneNumber) async {
-        final localTimeout = timeout ?? const Duration(minutes: 1);
-        final telegramAuth = TelegramAuth(
-          phoneNumber: phoneNumber,
-          botId: botId,
-          botDomain: botDomain,
-          timeout: localTimeout,
-        );
+        // #656/#657: timeout и любые ошибки логина ловим внутри — НЕ пробрасываем
+        // непойманным исключением (иначе uncaught -> краш в GlitchTip). Сообщаем
+        // через onAuthError, если хендлер задан, иначе тихо логируем.
+        try {
+          final localTimeout = timeout ?? const Duration(minutes: 1);
+          final telegramAuth = TelegramAuth(
+            phoneNumber: phoneNumber,
+            botId: botId,
+            botDomain: botDomain,
+            timeout: localTimeout,
+          );
 
-        await telegramAuth.launchTelegram();
-        await telegramAuth.initiateLogin();
+          await telegramAuth.launchTelegram();
+          await telegramAuth.initiateLogin();
 
-        final startTime = DateTime.now();
-        var isLoggedIn = false;
-        TelegramUser? user;
+          final startTime = DateTime.now();
+          var isLoggedIn = false;
+          TelegramUser? user;
 
-        while (DateTime.now().difference(startTime) < localTimeout) {
-          isLoggedIn = await telegramAuth.checkLoginStatus();
-          if (isLoggedIn) {
-            user = await telegramAuth.getUserData();
-            break;
+          while (DateTime.now().difference(startTime) < localTimeout) {
+            isLoggedIn = await telegramAuth.checkLoginStatus();
+            if (isLoggedIn) {
+              user = await telegramAuth.getUserData();
+              break;
+            }
+            await Future.delayed(const Duration(seconds: 2));
           }
-          await Future.delayed(const Duration(seconds: 2));
-        }
-        if (isLoggedIn && user != null) {
-          onLoginSuccess(user);
-        } else {
-          throw Exception('Login timeout');
+          if (isLoggedIn && user != null) {
+            onLoginSuccess(user);
+          } else {
+            throw Exception('Login timeout');
+          }
+        } catch (e) {
+          if (onAuthError != null) {
+            onAuthError!(e);
+          } else {
+            debugPrint(
+              'TelegramLoginWidget: вход не выполнен (timeout/ошибка): $e',
+            );
+          }
         }
       },
       onAuthError: (error) {
         if (onAuthError != null) {
           onAuthError!(error);
         } else {
-          throw error;
+          // #657: не пробрасываем непойманным (иначе краш) — логируем.
+          debugPrint(
+            'TelegramLoginWidget: ошибка авторизации (нет хендлера): $error',
+          );
         }
       },
     );
