@@ -1207,6 +1207,11 @@ class _LoginWidgetNewState extends State<LoginWidgetNew> {
                       i,
                       context: context,
                       onAuthLink: (url) async {
+                        // #919 (GT-1754): onAuthLink вызывается ПОСЛЕ async OAuth-флоу —
+                        // виджет мог размонтироваться, и тогда MediaQuery.of(context) в
+                        // диалоге кидает "Null check operator used on a null value".
+                        // Гард на mounted до любого использования context.
+                        if (!mounted) return null;
                         NsgSocialLoginResponse? response;
                         if (!kIsWeb) {
                           await showNsgDialog(
