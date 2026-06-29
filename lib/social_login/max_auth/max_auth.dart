@@ -1,206 +1,83 @@
-import 'package:nsg_login/social_login/max_auth/max_session.dart';
-import 'package:nsg_login/social_login/max_auth/max_user.dart';
+import 'dart:async';
+import 'dart:math';
+
+import 'package:nsg_data/nsg_data_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+/// Вход через мессенджер MAX по актуальной схеме Bot API (deep-link + webhook).
+///
+/// Старый путь (oauth.max.ru + скрейп HTML + проверка hash) умер: домен
+/// oauth.max.ru больше не существует, а MAX перешёл на платформу
+/// platform-api2.max.ru с подтверждением входа через webhook бота.
+///
+/// Поток:
+///   1. генерим одноразовый [nonce];
+///   2. [launchMax] открывает бота: web.max.ru/<bot>?startapp=<nonce>;
+///   3. пользователь жмёт «Запустить» — MAX шлёт webhook на НАШ сервер,
+///      сервер связывает nonce с пользователем MAX;
+///   4. [waitForConfirmation] поллит наш сервер (MaxPoll) до подтверждения;
+///   5. финальный обмен nonce -> app-токен делает verifyFunction = LoginMax
+///      (через штатный SocialLoginProvider.processVerify).
+///
+/// Клиент ходит ТОЛЬКО на наш сервер (provider.serverUri) — никакого
+/// кросс-доменного fetch, поэтому CORS на вебе не возникает.
 class MaxAuth {
-  static const _oauthOrigins = <String>[
-    'https://oauth.max.ru',
-    'https://oauth.mail.ru',
-  ];
-
-  final MaxSession _session = MaxSession();
-  final String phoneNumber;
-  final String botId;
-  final String botDomain;
-  final String botUsername;
-  final Duration timeout;
-
-  MaxUser? _user;
-
   MaxAuth({
-    required this.phoneNumber,
-    required this.botId,
+    required this.provider,
     required this.botUsername,
-    required this.botDomain,
-    this.timeout = const Duration(seconds: 60),
-  });
+    required this.botId,
+    this.timeout = const Duration(seconds: 90),
+    this.pollInterval = const Duration(seconds: 2),
+  }) : nonce = _generateNonce();
 
+  final NsgDataProvider provider;
+  final String botUsername;
+  final String botId;
+  final Duration timeout;
+  final Duration pollInterval;
+
+  /// Одноразовый идентификатор сессии входа, передаётся в deep-link как startapp
+  /// и обратно — в webhook бота. По нему сервер связывает MAX-пользователя.
+  final String nonce;
+
+  static String _generateNonce() {
+    final rnd = Random.secure();
+    final bytes = List<int>.generate(16, (_) => rnd.nextInt(256));
+    return bytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
+  }
+
+  /// Открывает бота MAX с нашим nonce в startapp-payload.
   Future<void> launchMax() async {
-    final launchCandidates = <Uri>[
-      Uri.parse('https://web.max.ru/$botUsername?startapp=auth'),
-      Uri.parse('https://web.max.ru/$botId?startapp=auth'),
-      Uri.parse('https://web.max.ru/$botDomain?startapp=auth'),
+    final candidates = <Uri>[
+      Uri.parse('https://web.max.ru/$botUsername?startapp=$nonce'),
+      Uri.parse('https://web.max.ru/$botId?startapp=$nonce'),
       Uri.parse('https://web.max.ru'),
     ];
-
-    for (final uri in launchCandidates) {
+    for (final uri in candidates) {
       if (await launchUrl(uri, mode: LaunchMode.externalApplication)) {
         return;
       }
     }
-
     throw Exception('Could not open MAX');
   }
 
-  Future<bool> initiateLogin() async {
-    try {
-      final cleanedPhone = phoneNumber
-          .replaceAll(RegExp(r'\+'), '')
-          .replaceAll(RegExp(r' '), '');
-      for (final oauthOrigin in _oauthOrigins) {
-        final headers = {
-          'Content-Type': 'application/x-www-form-urlencoded',
-          'origin': oauthOrigin,
-        };
-        try {
-          final response = await _session.post(
-            '$oauthOrigin/auth/request?bot_id=$botId&origin=$botDomain&embed=1',
-            headers,
-            'phone=$cleanedPhone',
-          );
-          return response.trim().toLowerCase() == 'true';
-        } on Exception {
-          // Try next OAuth origin if this one is unavailable.
-        }
-      }
-      throw Exception('No available OAuth endpoint');
-    } catch (e) {
-      throw Exception('Failed to initiate login: $e');
-    }
-  }
-
-  Future<bool> checkLoginStatus() async {
-    try {
-      for (final oauthOrigin in _oauthOrigins) {
-        final headers = {
-          'Content-length': '0',
-          'Content-Type': 'application/x-www-form-urlencoded',
-          'origin': oauthOrigin,
-        };
-        try {
-          final response = await _session.post(
-            '$oauthOrigin/auth/login?bot_id=$botId&origin=$botDomain&embed=1',
-            headers,
-            '',
-          );
-          return response.trim().toLowerCase() == 'true';
-        } on Exception {
-          // Try next OAuth origin if this one is unavailable.
-        }
-      }
-      throw Exception('No available OAuth endpoint');
-    } catch (e) {
-      throw Exception('Failed to check login status: $e');
-    }
-  }
-
-  Future<MaxUser?> getUserData() async {
-    final isLoggedIn = await checkLoginStatus();
-    if (!isLoggedIn) {
-      final loginSuccess = await initiateLogin();
-      if (!loginSuccess) {
-        throw Exception('Re-authentication failed');
-      }
-    }
-
-    try {
-      var response = '';
-      String? activeOauthOrigin;
-      for (final oauthOrigin in _oauthOrigins) {
-        try {
-          response = await _session.get(
-            '$oauthOrigin/auth?bot_id=$botId&origin=$botDomain&embed=1',
-            {},
-          );
-          activeOauthOrigin = oauthOrigin;
-          break;
-        } on Exception {
-          // Try next OAuth origin if this one is unavailable.
-        }
-      }
-      if (activeOauthOrigin == null) {
-        throw Exception('No available OAuth endpoint');
-      }
-
-      if (response.contains(
-        'postMessage(JSON.stringify({event: \'auth_result\'',
-      )) {
-        final regex = RegExp(r'result: ({.*}), origin');
-        final match = regex.firstMatch(response);
-
-        if (match == null) {
-          throw Exception('Failed to extract JSON data');
-        }
-
-        final jsonString = match.group(1)!;
-        final userData = _parseUserData(jsonString);
-        _user = MaxUser.fromJson(userData);
-        return _user;
-      }
-
-      final confirmUrl = _extractConfirmUrl(response);
-      if (confirmUrl == null) {
-        throw Exception('Failed to extract confirm_url');
-      }
-
-      final confirmResponse = await _session.get(
-        '$activeOauthOrigin$confirmUrl',
-        {},
+  /// Поллит наш сервер (MaxPoll), пока webhook не свяжет [nonce] с пользователем.
+  /// Возвращает true при подтверждении, false — при таймауте.
+  Future<bool> waitForConfirmation() async {
+    final deadline = DateTime.now().add(timeout);
+    while (DateTime.now().isBefore(deadline)) {
+      final resp = await provider.requestSocialMethod(
+        function: 'MaxPoll',
+        methodName: 'MaxPoll',
+        params: {'state': nonce},
       );
-
-      final confirmRegex = RegExp(r'result: ({.*}), origin');
-      final confirmMatch = confirmRegex.firstMatch(confirmResponse);
-
-      if (confirmMatch == null) {
-        throw Exception('Failed to extract JSON data after confirmation');
+      // errorCode == 0 -> сервер увидел подтверждение от webhook.
+      // Любой другой код (40400 pending / 40402 expired / сетевой сбой) -> ждём.
+      if (resp.errorCode == 0) {
+        return true;
       }
-
-      final confirmJsonString = confirmMatch.group(1)!;
-      final userData = _parseUserData(confirmJsonString);
-      _user = MaxUser.fromJson(userData);
-      return _user;
-    } catch (e) {
-      throw Exception('Failed to get user data: $e');
+      await Future.delayed(pollInterval);
     }
-  }
-
-  Map<String, dynamic> _parseUserData(String jsonString) {
-    final userData = <String, dynamic>{};
-
-    final idMatch = RegExp(r'"id":\s*"?(\d+)"?').firstMatch(jsonString);
-    final firstNameMatch = RegExp(
-      r'"first_name":\s*"(.*?)"',
-    ).firstMatch(jsonString);
-    final lastNameMatch = RegExp(
-      r'"last_name":\s*"(.*?)"',
-    ).firstMatch(jsonString);
-    final usernameMatch = RegExp(
-      r'"username":\s*"(.*?)"',
-    ).firstMatch(jsonString);
-    final photoUrlMatch = RegExp(
-      r'"photo_url":\s*"(.*?)"',
-    ).firstMatch(jsonString);
-    final authDateMatch = RegExp(
-      r'"auth_date":\s*"?(\d+)"?',
-    ).firstMatch(jsonString);
-    final hashMatch = RegExp(r'"hash":\s*"(.*?)"').firstMatch(jsonString);
-
-    userData['id'] = idMatch?.group(1) ?? '';
-    userData['first_name'] = firstNameMatch?.group(1) ?? '';
-    userData['last_name'] = lastNameMatch?.group(1) ?? '';
-    userData['username'] = usernameMatch?.group(1) ?? '';
-    userData['photo_url'] = photoUrlMatch?.group(1) ?? '';
-    userData['auth_date'] = authDateMatch?.group(1) ?? '';
-    userData['hash'] = hashMatch?.group(1) ?? '';
-    userData['raw_json'] = jsonString;
-
-    return userData;
-  }
-
-  String? _extractConfirmUrl(String htmlResponse) {
-    final match = RegExp(
-      r"function confirmRequest[\s\S]*?confirm_url\s*=\s*'([^']+)'",
-    ).firstMatch(htmlResponse);
-    return match?.group(1);
+    return false;
   }
 }

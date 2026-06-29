@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:nsg_controls/nsg_control_options.dart';
 import 'package:nsg_data/authorize/nsg_login_model.dart';
 import 'package:nsg_data/authorize/nsg_social_login_response.dart';
+import 'package:nsg_data/nsg_data_provider.dart';
 
 abstract class SocialAuthType {
   String get requestFunction;
@@ -20,8 +21,13 @@ abstract class SocialAuthType {
   /// Выполняет нативную авторизацию на устройстве.
   /// Возвращает [NsgSocialLoginResponse] с code/state для верификации,
   /// или null если пользователь отменил.
+  ///
+  /// [provider] передаётся для флоу, которым нужно обращаться к нашему серверу
+  /// прямо во время нативной авторизации (например, MAX поллит подтверждение
+  /// входа через бота). Большинству реализаций он не нужен.
   Future<NsgSocialLoginResponse?> performNativeAuth({
     BuildContext? context,
+    NsgDataProvider? provider,
   }) async => null;
 
   Widget Function(void Function() login) get socialLoginButton;
