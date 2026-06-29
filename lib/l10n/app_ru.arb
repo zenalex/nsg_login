@@ -41,5 +41,6 @@
   "password_is_empty": "Пароль пуст",
   "enter_confirmation_code_from_message": "Введите код подтверждения из сообщения",
   "password_is_required": "Требуется заполнить пароль",
-  "passwords_mistmatch": "Пароли не совпадают"
+  "passwords_mistmatch": "Пароли не совпадают",
+  "forgot_password": "Забыл пароль"
 }

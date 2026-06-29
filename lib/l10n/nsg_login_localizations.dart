@@ -358,6 +358,12 @@ abstract class NsgLoginLocalizations {
   /// In ru, this message translates to:
   /// **'Пароли не совпадают'**
   String get passwords_mistmatch;
+
+  /// No description provided for @forgot_password.
+  ///
+  /// In ru, this message translates to:
+  /// **'Забыл пароль'**
+  String get forgot_password;
 }
 
 class _NsgLoginLocalizationsDelegate

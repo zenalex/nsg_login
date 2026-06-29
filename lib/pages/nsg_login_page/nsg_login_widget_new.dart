@@ -751,21 +751,31 @@ class _LoginWidgetNewState extends State<LoginWidgetNew> {
           ),
         ),
       if (widget.widgetParams.usePasswordLogin &&
-          widget.widgetParams.enableRegistration)
+          (widget.widgetParams.enableRegistration ||
+              kIsWeb ||
+              (!Platform.isAndroid && !Platform.isIOS && !Platform.isMacOS)))
         Padding(
           padding: const EdgeInsets.only(top: 12, bottom: 4),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
             children: [
+              if (widget.widgetParams.enableRegistration) ...[
+                _link(
+                  "${tran.forgot_password}${widget.widgetParams.enableRegistration ? ' / ${widget.widgetParams.headerMessageRegistration}' : ''}",
+                  () {
+                    currentState = NsgLoginState.registration;
+                    setState(() {});
+                  },
+                ),
+              ],
               if (kIsWeb ||
-                  (!Platform.isAndroid && !Platform.isIOS && !Platform.isMacOS))
-                Expanded(child: widget.loginPage.getRememberMeCheckbox())
-              else
-                const Spacer(),
-              _link(widget.widgetParams.textRegistration, () {
-                currentState = NsgLoginState.registration;
-                setState(() {});
-              }),
+                  (!Platform.isAndroid &&
+                      !Platform.isIOS &&
+                      !Platform.isMacOS)) ...[
+                if (widget.widgetParams.enableRegistration)
+                  const SizedBox(height: 8),
+                widget.loginPage.getRememberMeCheckbox(),
+              ],
             ],
           ),
         )
@@ -774,7 +784,7 @@ class _LoginWidgetNewState extends State<LoginWidgetNew> {
         Padding(
           padding: const EdgeInsets.only(top: 12),
           child: Align(
-            alignment: Alignment.centerLeft,
+            alignment: Alignment.centerRight,
             child: widget.loginPage.getRememberMeCheckbox(),
           ),
         )

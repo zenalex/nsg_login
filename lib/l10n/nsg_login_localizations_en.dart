@@ -156,4 +156,7 @@ class NsgLoginLocalizationsEn extends NsgLoginLocalizations {
 
   @override
   String get passwords_mistmatch => 'Passwords mistmatch';
+
+  @override
+  String get forgot_password => 'Forgot password';
 }

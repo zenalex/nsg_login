@@ -159,4 +159,7 @@ class NsgLoginLocalizationsRu extends NsgLoginLocalizations {
 
   @override
   String get passwords_mistmatch => 'Пароли не совпадают';
+
+  @override
+  String get forgot_password => 'Забыл пароль';
 }
