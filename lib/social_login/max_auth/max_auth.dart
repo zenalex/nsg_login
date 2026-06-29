@@ -1,12 +1,17 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:nsg_login/social_login/max_auth/max_session.dart';
 import 'package:nsg_login/social_login/max_auth/max_user.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class MaxAuth {
-  static const _oauthOrigins = <String>[
-    'https://oauth.max.ru',
-    'https://oauth.mail.ru',
-  ];
+  // На вебе ходим через same-origin reverse-proxy (nginx: /max-oauth/ -> oauth.max.ru,
+  // /max-oauth-mail/ -> oauth.mail.ru), иначе браузер режет кросс-доменный fetch по CORS
+  // и запрещает ставить Origin/Cookie из JS — их проставляет nginx. Относительный путь
+  // автоматически same-origin для любого фронта (app.futbolista.me/.ru, app2.*).
+  // На нативе (mobile/desktop) CORS нет — ходим в oauth-хосты напрямую.
+  static const _oauthOrigins = kIsWeb
+      ? <String>['/max-oauth', '/max-oauth-mail']
+      : <String>['https://oauth.max.ru', 'https://oauth.mail.ru'];
 
   final MaxSession _session = MaxSession();
   final String phoneNumber;
