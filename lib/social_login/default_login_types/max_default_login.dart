@@ -10,6 +10,7 @@ import 'package:nsg_login/social_login/social_login_types.dart';
 abstract class MaxDefaultAuth extends SocialAuthType {
   String get botId;
   String get botDomain;
+  String get botUsername => "";
 
   String get buttonText => tran.login_via_social("MAX");
   TextStyle? get textStyle => null;
@@ -40,6 +41,7 @@ abstract class MaxDefaultAuth extends SocialAuthType {
         context,
         builder: (dialogContext) => MaxLoginWidget(
           title: socialName,
+          botUsername: botUsername,
           botId: botId,
           botDomain: botDomain,
           buttonText: buttonText,
@@ -110,11 +112,13 @@ class MaxLoginWidget extends StatelessWidget {
     this.onAuthError,
     this.title,
     this.logo,
+    required this.botUsername,
   });
 
   final String botId;
   final String botDomain;
   final String buttonText;
+  final String botUsername;
   final String? title;
   final Duration? timeout;
   final Widget? logo;
@@ -132,12 +136,13 @@ class MaxLoginWidget extends StatelessWidget {
         final maxAuth = MaxAuth(
           phoneNumber: phoneNumber,
           botId: botId,
+          botUsername: botUsername,
           botDomain: botDomain,
           timeout: localTimeout,
         );
 
-        await maxAuth.launchMax();
         await maxAuth.initiateLogin();
+        await maxAuth.launchMax();
 
         final startTime = DateTime.now();
         var isLoggedIn = false;

@@ -3,12 +3,16 @@ import 'package:nsg_login/social_login/max_auth/max_user.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class MaxAuth {
-  static const _oauthOrigin = 'https://oauth.max.ru';
+  static const _oauthOrigins = <String>[
+    'https://oauth.max.ru',
+    'https://oauth.mail.ru',
+  ];
 
   final MaxSession _session = MaxSession();
   final String phoneNumber;
   final String botId;
   final String botDomain;
+  final String botUsername;
   final Duration timeout;
 
   MaxUser? _user;
@@ -16,54 +20,75 @@ class MaxAuth {
   MaxAuth({
     required this.phoneNumber,
     required this.botId,
+    required this.botUsername,
     required this.botDomain,
     this.timeout = const Duration(seconds: 60),
   });
 
   Future<void> launchMax() async {
-    final Uri webUri = Uri.parse('https://max.ru');
+    final launchCandidates = <Uri>[
+      Uri.parse('https://web.max.ru/$botUsername?startapp=auth'),
+      Uri.parse('https://web.max.ru/$botId?startapp=auth'),
+      Uri.parse('https://web.max.ru/$botDomain?startapp=auth'),
+      Uri.parse('https://web.max.ru'),
+    ];
 
-    if (!await launchUrl(webUri, mode: LaunchMode.externalApplication)) {
-      throw Exception('Could not open MAX');
+    for (final uri in launchCandidates) {
+      if (await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+        return;
+      }
     }
+
+    throw Exception('Could not open MAX');
   }
 
   Future<bool> initiateLogin() async {
-    final headers = {
-      'Content-Type': 'application/x-www-form-urlencoded',
-      'origin': _oauthOrigin,
-    };
-
     try {
       final cleanedPhone = phoneNumber
           .replaceAll(RegExp(r'\+'), '')
           .replaceAll(RegExp(r' '), '');
-
-      final response = await _session.post(
-        '$_oauthOrigin/auth/request?bot_id=$botId&origin=$botDomain&embed=1',
-        headers,
-        'phone=$cleanedPhone',
-      );
-      return response.trim().toLowerCase() == 'true';
+      for (final oauthOrigin in _oauthOrigins) {
+        final headers = {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'origin': oauthOrigin,
+        };
+        try {
+          final response = await _session.post(
+            '$oauthOrigin/auth/request?bot_id=$botId&origin=$botDomain&embed=1',
+            headers,
+            'phone=$cleanedPhone',
+          );
+          return response.trim().toLowerCase() == 'true';
+        } on Exception {
+          // Try next OAuth origin if this one is unavailable.
+        }
+      }
+      throw Exception('No available OAuth endpoint');
     } catch (e) {
       throw Exception('Failed to initiate login: $e');
     }
   }
 
   Future<bool> checkLoginStatus() async {
-    final headers = {
-      'Content-length': '0',
-      'Content-Type': 'application/x-www-form-urlencoded',
-      'origin': _oauthOrigin,
-    };
-
     try {
-      final response = await _session.post(
-        '$_oauthOrigin/auth/login?bot_id=$botId&origin=$botDomain&embed=1',
-        headers,
-        '',
-      );
-      return response.trim().toLowerCase() == 'true';
+      for (final oauthOrigin in _oauthOrigins) {
+        final headers = {
+          'Content-length': '0',
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'origin': oauthOrigin,
+        };
+        try {
+          final response = await _session.post(
+            '$oauthOrigin/auth/login?bot_id=$botId&origin=$botDomain&embed=1',
+            headers,
+            '',
+          );
+          return response.trim().toLowerCase() == 'true';
+        } on Exception {
+          // Try next OAuth origin if this one is unavailable.
+        }
+      }
+      throw Exception('No available OAuth endpoint');
     } catch (e) {
       throw Exception('Failed to check login status: $e');
     }
@@ -79,10 +104,23 @@ class MaxAuth {
     }
 
     try {
-      final response = await _session.get(
-        '$_oauthOrigin/auth?bot_id=$botId&origin=$botDomain&embed=1',
-        {},
-      );
+      var response = '';
+      String? activeOauthOrigin;
+      for (final oauthOrigin in _oauthOrigins) {
+        try {
+          response = await _session.get(
+            '$oauthOrigin/auth?bot_id=$botId&origin=$botDomain&embed=1',
+            {},
+          );
+          activeOauthOrigin = oauthOrigin;
+          break;
+        } on Exception {
+          // Try next OAuth origin if this one is unavailable.
+        }
+      }
+      if (activeOauthOrigin == null) {
+        throw Exception('No available OAuth endpoint');
+      }
 
       if (response.contains(
         'postMessage(JSON.stringify({event: \'auth_result\'',
@@ -106,7 +144,7 @@ class MaxAuth {
       }
 
       final confirmResponse = await _session.get(
-        '$_oauthOrigin$confirmUrl',
+        '$activeOauthOrigin$confirmUrl',
         {},
       );
 
