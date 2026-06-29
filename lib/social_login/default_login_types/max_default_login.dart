@@ -1,16 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:nsg_data/authorize/nsg_social_login_response.dart';
+import 'package:nsg_data/nsg_data_provider.dart';
 import 'package:nsg_login/helpers.dart';
 import 'package:nsg_login/social_login/default_login_types/default_login_dialog.dart';
 import 'package:nsg_login/social_login/max_auth/max_auth.dart';
-import 'package:nsg_login/social_login/max_auth/max_user.dart';
 import 'package:nsg_login/social_login/social_login_types.dart';
 
 abstract class MaxDefaultAuth extends SocialAuthType {
   String get botId;
-  String get botDomain;
-  String get botUsername => "";
+
+  /// Username бота MAX для deep-link (web.max.ru/<botUsername>?startapp=...).
+  /// ОБЯЗАТЕЛЬНО переопределить реальным username — иначе deep-link не откроет
+  /// нужного бота.
+  String get botUsername;
 
   String get buttonText => tran.login_via_social("MAX");
   TextStyle? get textStyle => null;
@@ -22,11 +25,12 @@ abstract class MaxDefaultAuth extends SocialAuthType {
   @override
   String get requestMethodName => "";
 
+  // Финальный обмен nonce -> app-токен делает серверный LoginMax (consume nonce).
   @override
-  String get verifyFunction;
+  String get verifyFunction => "LoginMax";
 
   @override
-  String get verifyMethodName;
+  String get verifyMethodName => "LoginMax";
 
   @override
   bool get useNativeAuth => true;
@@ -34,25 +38,25 @@ abstract class MaxDefaultAuth extends SocialAuthType {
   @override
   Future<NsgSocialLoginResponse?> performNativeAuth({
     BuildContext? context,
+    NsgDataProvider? provider,
   }) async {
+    if (provider == null) {
+      throw Exception('MAX login requires NsgDataProvider');
+    }
     NsgSocialLoginResponse? response;
     if (context != null) {
       await SocialLoginDialog.show(
         context,
         builder: (dialogContext) => MaxLoginWidget(
           title: socialName,
-          botUsername: botUsername,
           botId: botId,
-          botDomain: botDomain,
+          botUsername: botUsername,
+          provider: provider,
           buttonText: buttonText,
           logo: icon(50),
-          onLoginSuccess: (user) {
-            response = NsgSocialLoginResponse(
-              code: user.hash.toString(),
-              state: user.id.toString(),
-              payload: user.toJson(),
-              loginType: 'Max',
-            );
+          onLoginSuccess: (nonce) {
+            // Передаём nonce в state — verifyFunction (LoginMax) обменяет его на токен.
+            response = NsgSocialLoginResponse(state: nonce, loginType: 'Max');
             Navigator.of(dialogContext).pop();
           },
         ),
@@ -101,28 +105,33 @@ abstract class MaxDefaultAuth extends SocialAuthType {
   String get socialName => "MAX";
 }
 
+/// Диалог входа через MAX: одна кнопка, которая открывает бота и ждёт
+/// подтверждения через webhook (поллинг нашего сервера). Телефон не нужен —
+/// личность приходит из MAX через бота.
 class MaxLoginWidget extends StatelessWidget {
   const MaxLoginWidget({
     super.key,
     required this.botId,
-    required this.botDomain,
-    this.timeout,
+    required this.botUsername,
+    required this.provider,
     required this.buttonText,
     required this.onLoginSuccess,
     this.onAuthError,
     this.title,
     this.logo,
-    required this.botUsername,
+    this.timeout,
   });
 
   final String botId;
-  final String botDomain;
-  final String buttonText;
   final String botUsername;
+  final NsgDataProvider provider;
+  final String buttonText;
   final String? title;
   final Duration? timeout;
   final Widget? logo;
-  final void Function(MaxUser user) onLoginSuccess;
+
+  /// Вызывается с nonce подтверждённой сессии.
+  final void Function(String nonce) onLoginSuccess;
   final void Function(dynamic error)? onAuthError;
 
   @override
@@ -131,33 +140,19 @@ class MaxLoginWidget extends StatelessWidget {
       title: title,
       logo: logo,
       buttonText: buttonText,
-      onButtonPressed: (phoneNumber) async {
-        final localTimeout = timeout ?? const Duration(minutes: 1);
+      showPhoneInput: false,
+      onButtonPressed: (_) async {
         final maxAuth = MaxAuth(
-          phoneNumber: phoneNumber,
-          botId: botId,
+          provider: provider,
           botUsername: botUsername,
-          botDomain: botDomain,
-          timeout: localTimeout,
+          botId: botId,
+          timeout: timeout ?? const Duration(seconds: 90),
         );
 
-        await maxAuth.initiateLogin();
         await maxAuth.launchMax();
-
-        final startTime = DateTime.now();
-        var isLoggedIn = false;
-        MaxUser? user;
-
-        while (DateTime.now().difference(startTime) < localTimeout) {
-          isLoggedIn = await maxAuth.checkLoginStatus();
-          if (isLoggedIn) {
-            user = await maxAuth.getUserData();
-            break;
-          }
-          await Future.delayed(const Duration(seconds: 2));
-        }
-        if (isLoggedIn && user != null) {
-          onLoginSuccess(user);
+        final confirmed = await maxAuth.waitForConfirmation();
+        if (confirmed) {
+          onLoginSuccess(maxAuth.nonce);
         } else {
           throw Exception('Login timeout');
         }

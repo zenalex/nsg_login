@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:nsg_data/authorize/nsg_social_login_response.dart';
+import 'package:nsg_data/nsg_data_provider.dart';
 import 'package:nsg_login/helpers.dart';
 import 'package:nsg_login/social_login/default_login_types/default_login_dialog.dart';
 import 'package:nsg_login/social_login/social_login_types.dart';
@@ -35,6 +36,7 @@ abstract class TelegramDefaultAuth extends SocialAuthType {
   @override
   Future<NsgSocialLoginResponse?> performNativeAuth({
     BuildContext? context,
+    NsgDataProvider? provider,
   }) async {
     NsgSocialLoginResponse? response;
     if (context != null) {

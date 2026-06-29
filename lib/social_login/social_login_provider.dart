@@ -13,7 +13,10 @@ class SocialLoginProvider {
     Future<NsgSocialLoginResponse?> Function(String url)? onAuthLink,
   }) async {
     if (social.useNativeAuth) {
-      var authResult = await social.performNativeAuth(context: context);
+      var authResult = await social.performNativeAuth(
+        context: context,
+        provider: provider,
+      );
       return await processVerify(social, authResult);
     }
 

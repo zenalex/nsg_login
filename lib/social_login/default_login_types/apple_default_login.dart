@@ -4,6 +4,7 @@ import 'dart:math';
 import 'package:crypto/crypto.dart';
 import 'package:flutter/material.dart';
 import 'package:nsg_data/authorize/nsg_social_login_response.dart';
+import 'package:nsg_data/nsg_data_provider.dart';
 import 'package:nsg_login/social_login/social_login_types.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
@@ -26,6 +27,7 @@ abstract class AppleDefaultAuth extends SocialAuthType {
   @override
   Future<NsgSocialLoginResponse?> performNativeAuth({
     BuildContext? context,
+    NsgDataProvider? provider,
   }) async {
     final rawNonce = _generateNonce();
     final hashedNonce = sha256.convert(utf8.encode(rawNonce)).toString();
