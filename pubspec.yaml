@@ -52,7 +52,21 @@ dependencies:
   crypto: ^3.0.6
   http: ^1.4.0
   telegram_login_flutter: ^1.0.1
-  flutter_login_vk: ^3.0.0
+  # Пропатченный flutter_login_vk (форк 3.0.0), а не pub-версия.
+  #
+  # Штатный плагин в ActivityListener зовёт VK.onActivityResult БЕЗУСЛОВНО —
+  # не проверяя ни свой ли это requestCode, ни инициализацию VK SDK. Flutter
+  # раздаёт результат activity ВСЕМ плагинам, поэтому в продукте, который не
+  # использует VK-вход (VK.initialize() не вызывается никогда), ЛЮБОЙ выбор
+  # файла/фото ронял приложение:
+  #   UninitializedPropertyAccessException: lateinit property authManager
+  # В форке — ранний выход, если VK-логина не ждём, плюс catch.
+  #
+  # Зависимость путём, а НЕ dependency_overrides: overrides действуют только
+  # в корневом приложении, поэтому из библиотеки так не починить — каждый
+  # продукт был бы обязан помнить про костыль. Здесь исправление получают все.
+  flutter_login_vk:
+    path: packages/flutter_login_vk
 
 dev_dependencies:
   flutter_test:
