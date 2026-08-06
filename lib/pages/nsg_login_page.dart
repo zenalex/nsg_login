@@ -150,6 +150,15 @@ class LoginWidgetState extends State<LoginWidget> {
   bool _loginResultHandled = false;
   bool _closeHandled = false;
 
+  ///Текст ошибки под полем ввода проверочного кода.
+  ///Снекбар (nsgSnackbar → Flushbar) — единственный канал показа ошибки, и он
+  ///молча теряется в нескольких случаях: overlay ещё/уже не смонтирован,
+  ///show() бросил исключение (оно гасится), сообщение успело исчезнуть по
+  ///таймауту. Для «код неверный» это выглядит как «нажал — ничего не
+  ///произошло», поэтому дублируем ошибку прямо в форме — она не зависит от
+  ///overlay и остаётся на экране до следующей попытки.
+  String _verificationError = '';
+
   //TODO_FUTURE: заполнять токен!!!
   String firebaseToken = '';
 
@@ -974,11 +983,26 @@ class LoginWidgetState extends State<LoginWidget> {
         initialValue: securityCode,
         autofillHints: [AutofillHints.oneTimeCode],
         keyboardType: TextInputType.number,
-        onChanged: (value) => securityCode = value,
+        onChanged: (value) {
+          securityCode = value;
+          //Пользователь исправляет код — убираем прошлую ошибку
+          if (_verificationError != '') {
+            setState(() => _verificationError = '');
+          }
+        },
         validator: (value) => value == null || value.length < 6
             ? 'Enter confirmation code from message'
             : null,
       ),
+      if (_verificationError != '')
+        Padding(
+          padding: const EdgeInsets.only(bottom: 10),
+          child: Text(
+            _verificationError,
+            textAlign: TextAlign.center,
+            style: TextStyle(color: nsgtheme.colorError, fontWeight: FontWeight.w500),
+          ),
+        ),
       if (widget.widgetParams.usePasswordLogin)
         _getInput(
           hintText: widget.widgetParams.textEnterNewPassword,
@@ -1229,6 +1253,16 @@ class LoginWidgetState extends State<LoginWidget> {
     required String newPassword,
   }) async {
     if (!_formKey.currentState!.validate()) return;
+    //Код короче 6 цифр форма пропускает (валидатор нейтрализован обёрткой в
+    //_getInput), а сервер на такой запрос отвечает тем же «неверный код» —
+    //отвечаем сразу и понятнее, не тратя попытку.
+    if (securityCode.length < 6) {
+      setState(() => _verificationError = widget.widgetParams.textEnterCode);
+      return;
+    }
+    if (_verificationError != '') {
+      setState(() => _verificationError = '');
+    }
     widget.provider
         .phoneLogin(
           phoneNumber: loginType == NsgLoginType.phone ? phoneNumber : email,
@@ -1275,7 +1309,19 @@ class LoginWidgetState extends State<LoginWidget> {
     var errorMessage = widget.widgetParams.errorMessageByStatusCode!(
       answerCode.errorCode,
     );
-    NsgMetrica.reportLoginFailed('Phone', answerCode.toString());
+    //Расшифровка по коду знает не про все коды сервера (например, сервер 112
+    //отдаёт 40303 «Введен неправильный код»), а на неизвестный код выдаёт
+    //«Произошла ошибка N» либо пустую строку — которую showError молча
+    //проглатывает. Текст сервера точнее, поэтому берём его как основной.
+    if (answerCode.errorMessage.isNotEmpty) {
+      errorMessage = answerCode.errorMessage;
+    }
+    //Показ ошибки — до отправки метрики: если та бросит исключение,
+    //пользователь всё равно увидит причину (иначе экран молчит).
+    if (mounted) {
+      setState(() => _verificationError = errorMessage);
+    }
     widget.widgetParams.showError(context, errorMessage);
+    NsgMetrica.reportLoginFailed('Phone', answerCode.toString());
   }
 }
