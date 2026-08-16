@@ -18,10 +18,26 @@ class MainLoginProvider {
       throw Exception(
         response.errorMessage.isNotEmpty
             ? response.errorMessage
-            : 'Authorization request failed',
+            : _failureDetails(mainLogin.requestMethodName, response),
       );
     }
     return response;
+  }
+
+  /// Текст отказа, когда сервер не прислал сообщения.
+  ///
+  /// Раньше здесь была голая строка 'Authorization request failed'. Сервер при
+  /// этом возвращает `errorCode`, а метод входа известен из самого запроса — и
+  /// то и другое просто выбрасывалось. В GlitchTip копился кластер из
+  /// 245 одинаковых событий, по которым нельзя было сказать ни какой вход
+  /// сломан, ни почему.
+  ///
+  /// ⚠️ Текст исключения — это отпечаток группировки: события разойдутся по
+  /// методу и коду. Это и нужно — разные отказы перестанут склеиваться в одну
+  /// кучу. Старый кластер после раскатки замолчит, новые появятся отдельно.
+  static String _failureDetails(String method, NsgLoginResponse response) {
+    final where = method.isEmpty ? 'unknown method' : method;
+    return 'Authorization request failed ($where, errorCode ${response.errorCode})';
   }
 
   Future<bool> processLogin(
