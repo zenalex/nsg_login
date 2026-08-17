@@ -463,6 +463,16 @@ class _LoginWidgetNewState extends State<LoginWidgetNew> {
         currentState = NsgLoginState.verification;
       } else {
         isLoginSuccessfull = true;
+        // Вход по телефону и паролю завершается ЗДЕСЬ: ниже эта ветка делает
+        // return, а вызов reportLoginSuccess стоял после него и был недостижим —
+        // событие входа не отправлялось вообще. Внешне ничего не ломалось,
+        // потому что в приложение уводит onLogin() из _getContext.
+        //
+        // errorCode 40201 сюда тоже попадает, но успехом входа не является,
+        // поэтому отправляем только на чистом нуле.
+        if (answerCode.errorCode == 0) {
+          NsgMetrica.reportLoginSuccess('Phone');
+        }
       }
       setState(() {});
       if (answerCode.errorCode != 0) {
