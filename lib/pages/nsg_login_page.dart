@@ -13,6 +13,7 @@ import 'package:nsg_data/authorize/nsg_login_response.dart';
 import 'package:nsg_data/authorize/nsg_social_login_response.dart';
 import 'package:nsg_data/nsg_data.dart';
 import 'package:nsg_data/password/nsg_login_password_strength.dart';
+import 'package:nsg_login/password_strength_ui.dart';
 import 'package:nsg_login/helpers.dart';
 import 'package:nsg_login/main_login/main_login_type.dart';
 import 'package:nsg_login/nsg_login_params.dart';
@@ -433,7 +434,8 @@ class LoginWidgetState extends State<LoginWidget> {
   Future<Image> _loadCaptureImage() async {
     Image image;
     try {
-      image = await widget.provider.getCaptcha();
+      // getCaptcha отдаёт сырые байты — виджет собираем здесь, в визуальном слое.
+      image = Image.memory(await widget.provider.getCaptcha());
     } catch (e) {
       image = Image.asset('assets/images/logo.png', package: 'nsg_login');
     }
