@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:nsg_data/authorize/nsg_login_response.dart';
 import 'package:nsg_data/authorize/nsg_social_login_response.dart';
 import 'package:nsg_data/nsg_data_provider.dart';
+import 'package:nsg_login/social_login/social_login_exception.dart';
 import 'package:nsg_login/social_login/social_login_types.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -48,10 +49,16 @@ class SocialLoginProvider {
     );
 
     if (response.isError) {
-      throw Exception(
-        response.errorMessage.isNotEmpty
+      // Типизированное исключение вместо голого Exception: вызывающая сторона
+      // должна отличать «покажи человеку сообщение» от «это дефект».
+      // До правки 403-геоблок и обрыв связи оба приезжали в трекер как fatal,
+      // хотя чинить в коде нечего ни в том, ни в другом случае (#1594).
+      throw NsgSocialLoginException(
+        message: response.errorMessage.isNotEmpty
             ? response.errorMessage
             : _failureDetails(social.requestMethodName, response),
+        method: social.requestMethodName,
+        code: response.errorCode,
       );
     }
 

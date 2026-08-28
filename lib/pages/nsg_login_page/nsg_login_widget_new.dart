@@ -16,6 +16,7 @@ import 'package:nsg_data/authorize/nsg_login_response.dart';
 import 'package:nsg_data/authorize/nsg_social_login_response.dart';
 import 'package:nsg_data/nsg_data.dart';
 import 'package:nsg_data/password/nsg_login_password_strength.dart';
+import 'package:nsg_login/social_login/social_login_exception.dart';
 import 'package:nsg_login/password_strength_ui.dart';
 import 'package:nsg_login/helpers.dart';
 import 'package:nsg_login/nsg_login_params.dart';
@@ -1274,6 +1275,19 @@ class _LoginWidgetNewState extends State<LoginWidgetNew> {
                         );
                       }
                     }
+                  } on NsgSocialLoginException catch (e) {
+                    // Штатный отказ: сервер объяснил, почему не пускает (403),
+                    // либо связь оборвалась. Показываем человеку сообщение и
+                    // останавливаемся — rethrow здесь превращал ожидаемый отказ
+                    // в fatal и заваливал трекер (#1594).
+                    debugPrint('Social login refused: $e');
+                    if (context.mounted) {
+                      nsgSnackbar(
+                        text: e.message,
+                        type: NsgSnarkBarType.error,
+                      );
+                    }
+                    if (!e.isExpected) rethrow;
                   } catch (e) {
                     debugPrint('Social login error: $e');
                     if (context.mounted) {
