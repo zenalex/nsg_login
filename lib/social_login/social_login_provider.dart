@@ -75,24 +75,64 @@ class SocialLoginProvider {
     return await processVerify(social, authLink);
   }
 
+  /// Проверка результата на нашем сервере — общий финал ОБОИХ путей входа.
+  ///
+  /// ⚠️ Сюда приходят и нативные способы (Apple, Telegram, MAX, VK-app), а их
+  /// больше нигде не подхватывают: `useNativeAuth == true` уводит их мимо
+  /// ветки с запросом ссылки в [processLogin]. Поэтому отказ, не показанный
+  /// здесь, не показывается пользователю нигде.
+  ///
+  /// Раньше здесь на любой отказ стояло `return false`, и виджет на `false` не
+  /// делает ничего: ни сообщения, ни записи в трекер. Вход через Apple в РФ
+  /// выглядел как «кнопка не работает» — сервер при этом отвечал внятным 403
+  /// «Авторизация Apple недоступна в РФ. Выберите другой способ», а вход через
+  /// Telegram точно так же молча гас, и причина не доезжала вообще никуда.
   Future<bool> processVerify(
     SocialAuthType social,
     NsgSocialLoginResponse? authLink,
   ) async {
-    if (authLink != null) {
-      var loginResponse = await provider.requestSocialMethod(
-        methodName: social.verifyMethodName,
-        function: social.verifyFunction,
-        params: social.getVerifyParams(authLink),
-      );
+    // Пользователь закрыл окно соцсети или не подтвердил вход. Это отмена, а не
+    // отказ: показывать нечего, и раньше, и сейчас — молча выходим.
+    if (authLink == null) return false;
 
-      if (loginResponse.errorCode == 0 && !loginResponse.isAnonymous) {
-        return true;
-      }
+    var loginResponse = await provider.requestSocialMethod(
+      methodName: social.verifyMethodName,
+      function: social.verifyFunction,
+      params: social.getVerifyParams(authLink),
+    );
 
-      return false;
-    } else {
-      return false;
+    if (loginResponse.errorCode == 0 && !loginResponse.isAnonymous) {
+      return true;
     }
+
+    // Симметрично [processLogin]: несём наверх код и текст сервера. Штатный
+    // отказ (403 — не пустил осознанно, 0 — не ответил) вызывающая сторона
+    // покажет и погасит, остальное уедет в трекер как дефект.
+    throw NsgSocialLoginException(
+      message: loginResponse.errorMessage.isNotEmpty
+          ? loginResponse.errorMessage
+          : _verifyFailureDetails(social.verifyMethodName, loginResponse),
+      method: social.verifyMethodName,
+      code: loginResponse.errorCode,
+    );
+  }
+
+  /// Текст, когда сервер отказал, но объяснения не прислал.
+  ///
+  /// Отдельный от [_failureDetails] случай: `errorCode == 0` при анонимном
+  /// ответе — это не «сервер не ответил», а «ответил успехом, но сессии нет».
+  /// Кода у такого отказа нет, поэтому по [NsgSocialLoginException.isExpected]
+  /// он пройдёт как штатный: пользователь увидит текст, в трекер не улетит.
+  /// Так и задумано — гадать, дефект это или осознанный отказ сервера, здесь
+  /// не на чем, а заваливать трекер догадками мы уже пробовали (#1594).
+  static String _verifyFailureDetails(
+    String method,
+    NsgLoginResponse response,
+  ) {
+    final where = method.isEmpty ? 'unknown method' : method;
+    if (response.errorCode == 0) {
+      return 'Authorization verify returned anonymous session ($where)';
+    }
+    return 'Authorization verify failed ($where, errorCode ${response.errorCode})';
   }
 }
