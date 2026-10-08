@@ -17,6 +17,8 @@ import 'package:nsg_login/password_strength_ui.dart';
 import 'package:nsg_login/helpers.dart';
 import 'package:nsg_login/main_login/main_login_type.dart';
 import 'package:nsg_login/nsg_login_params.dart';
+import 'package:nsg_login/one_time_code.dart';
+import 'package:flutter/services.dart' show TextInputFormatter;
 import 'package:nsg_login/pages/nsg_login_state.dart';
 import 'package:nsg_controls/dialog/show_nsg_dialog.dart';
 import 'package:nsg_controls/widgets/nsg_snackbar.dart';
@@ -387,8 +389,14 @@ class LoginWidgetState extends State<LoginWidget> {
                                 ..._loginStateWidget(),
                               if (currentState == NsgLoginState.registration)
                                 ..._registrationStateWidget(),
+                              // Код и новый пароль — одна форма автозаполнения (#3088).
                               if (currentState == NsgLoginState.verification)
-                                ..._verificationStateWidget(),
+                                AutofillGroup(
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: _verificationStateWidget(),
+                                  ),
+                                ),
                             ],
                           ),
                         ),
@@ -983,8 +991,12 @@ class LoginWidgetState extends State<LoginWidget> {
       _getInput(
         hintText: widget.widgetParams.textEnterCode,
         initialValue: securityCode,
-        autofillHints: [AutofillHints.oneTimeCode],
-        keyboardType: TextInputType.number,
+        autofillHints: nsgOneTimeCodeAutofillHints,
+        keyboardType: nsgOneTimeCodeKeyboardType,
+        inputFormatters: nsgOneTimeCodeInputFormatters(),
+        // Код проверяется всегда, а не через «совпадает ли с повтором пароля»,
+        // как остальные поля этого помощника.
+        alwaysValidate: true,
         onChanged: (value) {
           securityCode = value;
           //Пользователь исправляет код — убираем прошлую ошибку
@@ -992,9 +1004,9 @@ class LoginWidgetState extends State<LoginWidget> {
             setState(() => _verificationError = '');
           }
         },
-        validator: (value) => value == null || value.length < 6
-            ? 'Enter confirmation code from message'
-            : null,
+        validator: (value) => isNsgLoginCodeComplete(value)
+            ? null
+            : 'Enter confirmation code from message',
       ),
       if (_verificationError != '')
         Padding(
@@ -1010,6 +1022,7 @@ class LoginWidgetState extends State<LoginWidget> {
           hintText: widget.widgetParams.textEnterNewPassword,
           initialValue: newPassword1,
           obscureText: true,
+          autofillHints: nsgNewPasswordAutofillHints,
           onChanged: (value) {
             if (widget.widgetParams.passwordIndicator != null) {
               passwordListener!.value = widget.widgetParams.passwordIndicator!(
@@ -1025,6 +1038,7 @@ class LoginWidgetState extends State<LoginWidget> {
           hintText: widget.widgetParams.textEnterPasswordAgain,
           initialValue: newPassword2,
           obscureText: true,
+          autofillHints: nsgNewPasswordAutofillHints,
           onChanged: (value) => newPassword2 = value,
           validator: (value) =>
               value == newPassword1 ? null : 'Passwords mistmatch',
@@ -1089,6 +1103,8 @@ class LoginWidgetState extends State<LoginWidget> {
     String? initialValue,
     TextInputType keyboardType = TextInputType.text,
     Iterable<String> autofillHints = const [],
+    List<TextInputFormatter>? inputFormatters,
+    bool alwaysValidate = false,
     bool obscureText = false,
     Function(String)? onChanged,
     String? Function(String?)? validator,
@@ -1099,14 +1115,14 @@ class LoginWidgetState extends State<LoginWidget> {
         autofillHints: autofillHints,
         cursorColor: Theme.of(context).primaryColor,
         keyboardType: keyboardType,
-        inputFormatters: null,
+        inputFormatters: inputFormatters,
         style: TextStyle(color: nsgtheme.colorText),
         textAlign: TextAlign.center,
         decoration: decor.copyWith(hintText: hintText),
         initialValue: initialValue,
         onChanged: onChanged,
         validator: (value) {
-          if (value != newPassword2) return null;
+          if (!alwaysValidate && value != newPassword2) return null;
           if (validator != null) return validator(value);
           return null;
         },
