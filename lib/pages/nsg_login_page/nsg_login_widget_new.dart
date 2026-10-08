@@ -20,6 +20,7 @@ import 'package:nsg_login/social_login/social_login_exception.dart';
 import 'package:nsg_login/password_strength_ui.dart';
 import 'package:nsg_login/helpers.dart';
 import 'package:nsg_login/nsg_login_params.dart';
+import 'package:nsg_login/one_time_code.dart';
 import 'package:nsg_login/pages/nsg_login_page/nsg_login_page_new.dart';
 import 'package:nsg_login/pages/nsg_login_state.dart';
 import 'package:nsg_login/pages/nsg_social_login_widget.dart';
@@ -240,8 +241,17 @@ class _LoginWidgetNewState extends State<LoginWidgetNew> {
                   ..._loginStateWidget(context),
                 if (currentState == NsgLoginState.registration)
                   ..._registrationStateWidget(context),
+                // Код и новый пароль — одна форма автозаполнения (#3088):
+                // система подставляет код из письма/SMS и предлагает сохранить
+                // новый пароль, когда группа уходит с экрана.
                 if (currentState == NsgLoginState.verification)
-                  ..._verificationStateWidget(context),
+                  AutofillGroup(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: _verificationStateWidget(context),
+                    ),
+                  ),
               ],
             ),
           ),
@@ -698,7 +708,7 @@ class _LoginWidgetNewState extends State<LoginWidgetNew> {
           _labeledField(
             label: null,
             field: TextFormField(
-              key: GlobalKey(),
+              key: const ValueKey('nsgLogin.login.phone'),
               cursorColor: Theme.of(context).primaryColor,
               keyboardType: TextInputType.phone,
               inputFormatters: [phoneFormatter],
@@ -719,7 +729,7 @@ class _LoginWidgetNewState extends State<LoginWidgetNew> {
           _labeledField(
             label: null,
             field: TextFormField(
-              key: GlobalKey(),
+              key: const ValueKey('nsgLogin.login.email'),
               cursorColor: Theme.of(context).primaryColor,
               keyboardType: TextInputType.emailAddress,
               style: _fieldTextStyle,
@@ -736,7 +746,7 @@ class _LoginWidgetNewState extends State<LoginWidgetNew> {
         Padding(
           padding: const EdgeInsets.only(top: 10),
           child: TextFormField(
-            key: GlobalKey(),
+            key: const ValueKey('nsgLogin.login.password'),
             obscureText: _obscureLoginPassword,
             cursorColor: Theme.of(context).primaryColor,
             keyboardType: TextInputType.visiblePassword,
@@ -842,7 +852,7 @@ class _LoginWidgetNewState extends State<LoginWidgetNew> {
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 10),
           child: TextFormField(
-            key: GlobalKey(),
+            key: const ValueKey('nsgLogin.login.captcha'),
             cursorColor: Theme.of(context).primaryColor,
             controller: _captchaController,
             textAlign: TextAlign.start,
@@ -922,7 +932,7 @@ class _LoginWidgetNewState extends State<LoginWidgetNew> {
           Padding(
             padding: const EdgeInsets.only(bottom: 10),
             child: TextFormField(
-              key: GlobalKey(),
+              key: const ValueKey('nsgLogin.registration.phone'),
               cursorColor: Theme.of(context).primaryColor,
               keyboardType: TextInputType.phone,
               inputFormatters: [phoneFormatter],
@@ -943,7 +953,7 @@ class _LoginWidgetNewState extends State<LoginWidgetNew> {
           Padding(
             padding: const EdgeInsets.only(bottom: 10),
             child: TextFormField(
-              key: GlobalKey(),
+              key: const ValueKey('nsgLogin.registration.email'),
               cursorColor: Theme.of(context).primaryColor,
               keyboardType: TextInputType.emailAddress,
               style: _fieldTextStyle,
@@ -985,15 +995,13 @@ class _LoginWidgetNewState extends State<LoginWidgetNew> {
           textAlign: TextAlign.start,
         ),
       ),
-      _getInput(
+      _oneTimeCodeInput(
         hintText: widget.widgetParams.textEnterCode,
         initialValue: securityCode,
-        autofillHints: const [AutofillHints.oneTimeCode],
-        keyboardType: TextInputType.number,
         onChanged: (value) => securityCode = value,
-        validator: (value) => value == null || value.length < 6
-            ? tran.enter_confirmation_code_from_message
-            : null,
+        validator: (value) => isNsgLoginCodeComplete(value)
+            ? null
+            : tran.enter_confirmation_code_from_message,
       ),
       Padding(
         padding: const EdgeInsets.only(bottom: 12),
@@ -1016,7 +1024,8 @@ class _LoginWidgetNewState extends State<LoginWidgetNew> {
         _labeledField(
           label: widget.widgetParams.textEnterNewPassword,
           field: TextFormField(
-            key: GlobalKey(),
+            key: const ValueKey('nsgLogin.verification.newPassword'),
+            autofillHints: nsgNewPasswordAutofillHints,
             obscureText: _obscureNewPassword1,
             cursorColor: Theme.of(context).primaryColor,
             keyboardType: TextInputType.visiblePassword,
@@ -1055,7 +1064,8 @@ class _LoginWidgetNewState extends State<LoginWidgetNew> {
         _labeledField(
           label: null,
           field: TextFormField(
-            key: GlobalKey(),
+            key: const ValueKey('nsgLogin.verification.newPasswordRepeat'),
+            autofillHints: nsgNewPasswordAutofillHints,
             obscureText: _obscureNewPassword2,
             cursorColor: Theme.of(context).primaryColor,
             keyboardType: TextInputType.visiblePassword,
@@ -1135,37 +1145,36 @@ class _LoginWidgetNewState extends State<LoginWidgetNew> {
     ];
   }
 
-  Widget _getInput({
+  /// Поле кода подтверждения (#3088): подсказка `oneTimeCode`, цифровая
+  /// клавиатура, только цифры и не длиннее кода.
+  ///
+  /// Ключ стабильный: прежний `GlobalKey()` создавался на каждый build, и любое
+  /// `setState` экрана (тот же «показать пароль» по соседству) пересоздавал
+  /// поле — фокус и предложенный системой код пропадали.
+  ///
+  /// Проверка кода раньше шла через общий помощник, где стояло
+  /// `if (value != newPassword2) return null` — то есть код не проверялся вовсе,
+  /// пока случайно не совпадал с повтором пароля.
+  Widget _oneTimeCodeInput({
     String hintText = '',
     String? initialValue,
-    TextInputType keyboardType = TextInputType.text,
-    Iterable<String> autofillHints = const [],
-    bool obscureText = false,
     void Function(String)? onChanged,
     String? Function(String?)? validator,
   }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: TextFormField(
-        key: GlobalKey(),
-        autofillHints: autofillHints,
+        key: const ValueKey('nsgLogin.verification.code'),
+        autofillHints: nsgOneTimeCodeAutofillHints,
         cursorColor: Theme.of(context).primaryColor,
-        keyboardType: keyboardType,
+        keyboardType: nsgOneTimeCodeKeyboardType,
+        inputFormatters: nsgOneTimeCodeInputFormatters(),
         style: _fieldTextStyle,
         textAlign: TextAlign.start,
         decoration: decor.copyWith(hintText: hintText),
         initialValue: initialValue,
         onChanged: onChanged,
-        validator: (value) {
-          if (value != newPassword2) {
-            return null;
-          }
-          if (validator != null) {
-            return validator(value);
-          }
-          return null;
-        },
-        obscureText: obscureText,
+        validator: validator,
       ),
     );
   }
