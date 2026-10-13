@@ -458,8 +458,16 @@ class LoginWidgetState extends State<LoginWidget> {
       updateTimer!.cancel();
     }
 
+    // Legacy servers reuse 40300 for the resend cooldown. It is not a
+    // failed verification when requesting a code with a remaining delay.
+    final codeAlreadySent =
+        currentState == NsgLoginState.registration &&
+        answerCode.errorCode == 40300 &&
+        answerCode.secondsBeforeRepeat > 0;
     //0 - успешно, 40201 - смс отправлено ранее. И в том и другом случае, переходим на экран ввода кода подтверждения
-    if ((answerCode.errorCode == 0 || answerCode.errorCode == 40201) &&
+    if ((answerCode.errorCode == 0 ||
+            answerCode.errorCode == 40201 ||
+            codeAlreadySent) &&
         (currentState == NsgLoginState.registration ||
             currentState == NsgLoginState.login)) {
       if (currentState == NsgLoginState.registration ||
@@ -470,7 +478,7 @@ class LoginWidgetState extends State<LoginWidget> {
       }
       setState(() {});
       //Если мы перешли на экран с ошибкой смс уже отправлено, выводим ошибку на экран после перехода на страницу подтверждения
-      if (answerCode.errorCode != 0) {
+      if (answerCode.errorCode != 0 && !codeAlreadySent) {
         var errorMessage = widget.widgetParams.errorMessageByStatusCode!(
           answerCode.errorCode,
         );
@@ -526,7 +534,9 @@ class LoginWidgetState extends State<LoginWidget> {
     NsgMetrica.reportLoginStart(loginType.toString());
 
     /* -------------------------------------------------------------- Если введён пароль -------------------------------------------------------------- */
-    if (password != null && password != '') {
+    if (currentState == NsgLoginState.login &&
+        password != null &&
+        password != '') {
       captchaCode = password;
     } else {
       captchaCode = '';

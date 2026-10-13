@@ -468,7 +468,15 @@ class _LoginWidgetNewState extends State<LoginWidgetNew> {
   ) {
     updateTimer?.cancel();
 
-    if ((answerCode.errorCode == 0 || answerCode.errorCode == 40201) &&
+    // Legacy servers use 40300 for both a wrong code and a resend cooldown.
+    // Only a code request with an explicit remaining delay is a cooldown.
+    final codeAlreadySent =
+        currentState == NsgLoginState.registration &&
+        answerCode.errorCode == 40300 &&
+        answerCode.secondsBeforeRepeat > 0;
+    if ((answerCode.errorCode == 0 ||
+            answerCode.errorCode == 40201 ||
+            codeAlreadySent) &&
         (currentState == NsgLoginState.registration ||
             currentState == NsgLoginState.login)) {
       if (currentState == NsgLoginState.registration ||
@@ -488,7 +496,7 @@ class _LoginWidgetNewState extends State<LoginWidgetNew> {
         }
       }
       setState(() {});
-      if (answerCode.errorCode != 0) {
+      if (answerCode.errorCode != 0 && !codeAlreadySent) {
         final errorMessage = widget.widgetParams.errorMessageByStatusCode!(
           answerCode.errorCode,
         );
@@ -541,7 +549,9 @@ class _LoginWidgetNewState extends State<LoginWidgetNew> {
 
     NsgMetrica.reportLoginStart(loginType.toString());
 
-    if (password != null && password != '') {
+    if (currentState == NsgLoginState.login &&
+        password != null &&
+        password != '') {
       captchaCode = password;
     } else {
       captchaCode = '';
