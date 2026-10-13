@@ -46,7 +46,7 @@ class _Provider extends NsgDataProvider {
 }
 
 class _Params extends NsgLoginParams {
-  _Params()
+  _Params({PasswordStrength Function(String)? strength})
     : super(
         useCaptcha: false,
         useEmailLogin: true,
@@ -61,7 +61,7 @@ class _Params extends NsgLoginParams {
         textEnterPasswordAgain: 'Repeat password',
         textConfirm: 'Confirm',
         textEnter: 'Sign in',
-        passwordIndicator: (_) => PasswordStrength.strong,
+        passwordIndicator: strength ?? (_) => PasswordStrength.strong,
         errorMessageByStatusCode: (code) => 'status:$code',
       );
 
@@ -103,6 +103,52 @@ void main() {
       );
       await tester.pump(const Duration(milliseconds: 1));
       return page;
+    }
+
+    if (modern) {
+      testWidgets(
+        'current: password focus survives strength and visibility changes',
+        (tester) async {
+          final provider = _Provider();
+          final params = _Params(
+            strength: (value) => value.length < 3
+                ? PasswordStrength.veryWeak
+                : PasswordStrength.strong,
+          );
+          await mount(tester, provider, params);
+          await tester.tap(find.text('REGISTER').first);
+          await tester.pump();
+          await tester.tap(find.text('SEND CODE'));
+          await tester.pump();
+          final password = find.widgetWithText(TextFormField, 'New password');
+          final editable = find.descendant(
+            of: password,
+            matching: find.byType(EditableText),
+          );
+          await tester.tap(password);
+          await tester.pump();
+          final original = tester.state<EditableTextState>(editable);
+          expect(original.widget.focusNode.hasFocus, isTrue);
+
+          for (final value in ['a', 'ab', 'abc', 'Pasted-password-123']) {
+            await tester.enterText(password, value);
+            await tester.pump();
+            expect(tester.state<EditableTextState>(editable), same(original));
+            expect(original.widget.focusNode.hasFocus, isTrue);
+            expect(original.widget.controller.text, value);
+          }
+
+          await tester.tap(
+            find.descendant(of: password, matching: find.byType(IconButton)),
+          );
+          await tester.pump();
+          expect(tester.state<EditableTextState>(editable), same(original));
+          expect(original.widget.controller.text, 'Pasted-password-123');
+          expect(original.widget.obscureText, isFalse);
+          expect(original.widget.focusNode.hasFocus, isTrue);
+          expect(tester.takeException(), isNull);
+        },
+      );
     }
 
     testWidgets('$variant: resend cooldown opens editable password form', (
