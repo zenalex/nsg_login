@@ -105,3 +105,11 @@ flutter_login_vk:
 (`nsg_login_vk` и т.п.), чтобы продукты без соц-входов не тащили нативный код.
 Это требует API регистрации типов входа и изменений в продуктах, которые VK
 используют, — пока не сделано.
+
+## Optional desktop WebView initialization (#3557)
+
+`NsgSocialLoginWidget.init` returns `Future<bool>`, including Windows Runtime lookup and environment creation. It must never be `async void`: platform failures would bypass the application's startup handler. Await the Future when readiness matters; `false` selects the external browser on Windows. A missing/empty WebView2 version is checked in release too, without relying on assert.
+
+`onError` lets the host record sanitized telemetry; `initializationFailureStage` identifies the local step. Do not log the auth URL, tokens or raw launcher errors. Runtime/plugin lookup and environment creation each have a bounded wait. The widget waits for that initialization before constructing an embedded view and offers a retry if the external browser cannot launch. The host continues to handle its existing OAuth deep-link callback and verification; launching a browser alone is not successful authorization.
+
+Regression: `test/social_webview_initialization_test.dart` covers missing Runtime, failed environment creation and browser retry. The Futbolista consumer also tests its actual `FutbolistaApp.initialize` and Windows VK route. Do not instantiate `webview_flutter` controllers on Windows: it is a different plugin from `flutter_inappwebview_windows`.
