@@ -157,13 +157,7 @@ class MaxLoginWidget extends StatelessWidget {
           throw Exception('Login timeout');
         }
       },
-      onAuthError: (error) {
-        if (onAuthError != null) {
-          onAuthError!(error);
-        } else {
-          throw error;
-        }
-      },
+      onAuthError: onAuthError,
     );
   }
 }
