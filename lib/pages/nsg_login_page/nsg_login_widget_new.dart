@@ -20,6 +20,7 @@ import 'package:nsg_login/social_login/social_login_exception.dart';
 import 'package:nsg_login/password_strength_ui.dart';
 import 'package:nsg_login/helpers.dart';
 import 'package:nsg_login/nsg_login_params.dart';
+import 'package:nsg_login/phone_registration_gate.dart';
 import 'package:nsg_login/one_time_code.dart';
 import 'package:nsg_login/pages/nsg_login_page/nsg_login_page_new.dart';
 import 'package:nsg_login/pages/nsg_login_state.dart';
@@ -303,7 +304,14 @@ class _LoginWidgetNewState extends State<LoginWidgetNew> {
                 selected: currentState == NsgLoginState.registration,
                 onTap: () {
                   if (currentState != NsgLoginState.registration) {
-                    setState(() => currentState = NsgLoginState.registration);
+                    setState(() {
+                      currentState = NsgLoginState.registration;
+                      loginType = registrationIdentityType(
+                        current: loginType,
+                        usePhoneRegistration: widget.widgetParams.usePhoneRegistration,
+                        useEmailLogin: widget.widgetParams.useEmailLogin,
+                      );
+                    });
                   }
                 },
               ),
@@ -544,6 +552,13 @@ class _LoginWidgetNewState extends State<LoginWidgetNew> {
     required String firebaseToken,
   }) {
     if (!_formKey.currentState!.validate()) {
+      return;
+    }
+    if (currentState == NsgLoginState.registration &&
+        phoneRegistrationCodeBlocked(
+          loginType: loginType,
+          usePhoneRegistration: widget.widgetParams.usePhoneRegistration,
+        )) {
       return;
     }
 
@@ -796,8 +811,14 @@ class _LoginWidgetNewState extends State<LoginWidgetNew> {
                 _link(
                   "${tran.forgot_password}${widget.widgetParams.enableRegistration ? ' / ${widget.widgetParams.headerMessageRegistration}' : ''}",
                   () {
-                    currentState = NsgLoginState.registration;
-                    setState(() {});
+                    setState(() {
+                      currentState = NsgLoginState.registration;
+                      loginType = registrationIdentityType(
+                        current: loginType,
+                        usePhoneRegistration: widget.widgetParams.usePhoneRegistration,
+                        useEmailLogin: widget.widgetParams.useEmailLogin,
+                      );
+                    });
                   },
                 ),
               ],
@@ -905,9 +926,12 @@ class _LoginWidgetNewState extends State<LoginWidgetNew> {
         widget.widgetParams.passwordIndicator != null) {
       passwordListener = ValueNotifier(null);
     }
+    final showPhoneRegistration = phoneRegistrationVisible(
+      usePhoneLogin: widget.widgetParams.usePhoneLogin,
+      usePhoneRegistration: widget.widgetParams.usePhoneRegistration,
+    );
     return [
-      if (widget.widgetParams.usePhoneLogin &&
-          widget.widgetParams.useEmailLogin)
+      if (showPhoneRegistration && widget.widgetParams.useEmailLogin)
         Padding(
           padding: const EdgeInsets.only(bottom: 12),
           child: Row(
@@ -937,7 +961,7 @@ class _LoginWidgetNewState extends State<LoginWidgetNew> {
             ],
           ),
         ),
-      if (widget.widgetParams.usePhoneLogin)
+      if (showPhoneRegistration)
         if (loginType == NsgLoginType.phone)
           Padding(
             padding: const EdgeInsets.only(bottom: 10),

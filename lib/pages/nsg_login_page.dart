@@ -17,6 +17,7 @@ import 'package:nsg_login/password_strength_ui.dart';
 import 'package:nsg_login/helpers.dart';
 import 'package:nsg_login/main_login/main_login_type.dart';
 import 'package:nsg_login/nsg_login_params.dart';
+import 'package:nsg_login/phone_registration_gate.dart';
 import 'package:nsg_login/one_time_code.dart';
 import 'package:flutter/services.dart' show TextInputFormatter;
 import 'package:nsg_login/pages/nsg_login_state.dart';
@@ -530,6 +531,13 @@ class LoginWidgetState extends State<LoginWidget> {
     required String firebaseToken,
   }) {
     if (!_formKey.currentState!.validate()) return;
+    if (currentState == NsgLoginState.registration &&
+        phoneRegistrationCodeBlocked(
+          loginType: loginType,
+          usePhoneRegistration: widget.widgetParams.usePhoneRegistration,
+        )) {
+      return;
+    }
 
     NsgMetrica.reportLoginStart(loginType.toString());
 
@@ -858,8 +866,14 @@ class LoginWidgetState extends State<LoginWidget> {
               padding: const EdgeInsets.only(top: 10),
               child: InkWell(
                 onTap: () {
-                  currentState = NsgLoginState.registration;
-                  setState(() {});
+                  setState(() {
+                    currentState = NsgLoginState.registration;
+                    loginType = registrationIdentityType(
+                      current: loginType,
+                      usePhoneRegistration: widget.widgetParams.usePhoneRegistration,
+                      useEmailLogin: widget.widgetParams.useEmailLogin,
+                    );
+                  });
                 },
                 child: Padding(
                   padding: const EdgeInsets.only(top: 10, bottom: 10),
@@ -885,9 +899,12 @@ class LoginWidgetState extends State<LoginWidget> {
   }
 
   List<Widget> _registrationStateWidget() {
+    final showPhoneRegistration = phoneRegistrationVisible(
+      usePhoneLogin: widget.widgetParams.usePhoneLogin,
+      usePhoneRegistration: widget.widgetParams.usePhoneRegistration,
+    );
     return [
-      if (widget.widgetParams.usePhoneLogin &&
-          widget.widgetParams.useEmailLogin)
+      if (showPhoneRegistration && widget.widgetParams.useEmailLogin)
         Padding(
           padding: const EdgeInsets.only(bottom: 5, top: 5),
           child: Row(
@@ -923,7 +940,7 @@ class LoginWidgetState extends State<LoginWidget> {
             ],
           ),
         ),
-      if (widget.widgetParams.usePhoneLogin)
+      if (showPhoneRegistration)
         if (loginType == NsgLoginType.phone)
           Padding(
             padding: const EdgeInsets.only(bottom: 10),
