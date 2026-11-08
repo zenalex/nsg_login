@@ -11,6 +11,7 @@ import 'package:nsg_data/authorize/nsg_login_response.dart';
 import 'package:nsg_data/nsg_data.dart';
 
 import 'package:nsg_login/nsg_login_params.dart';
+import 'package:nsg_login/phone_registration_gate.dart';
 
 class NsgLoginRegistrationPage extends StatelessWidget {
   final NsgDataProvider provider;
@@ -102,7 +103,15 @@ class _NsgLoginregistrationState extends State<NsgLoginRegistrationWidget> {
   @override
   void initState() {
     //widget.registrationPage.callback.sendDataPressed = () => doSmsRequest(loginType: loginType, firebaseToken: firebaseToken);
-    if (widget.widgetParams!.usePhoneLogin) {
+    final params = widget.widgetParams!;
+    if (phoneRegistrationVisible(
+      usePhoneLogin: params.usePhoneLogin,
+      usePhoneRegistration: params.usePhoneRegistration,
+    )) {
+      loginType = NsgLoginType.phone;
+    } else if (params.useEmailLogin) {
+      loginType = NsgLoginType.email;
+    } else if (params.usePhoneLogin) {
       loginType = NsgLoginType.phone;
     } else {
       loginType = NsgLoginType.email;
@@ -178,7 +187,10 @@ class _NsgLoginregistrationState extends State<NsgLoginRegistrationWidget> {
                       textAlign: TextAlign.center,
                     ),
                   ),
-                  if (widget.widgetParams!.usePhoneLogin &&
+                  if (phoneRegistrationVisible(
+                        usePhoneLogin: widget.widgetParams!.usePhoneLogin,
+                        usePhoneRegistration: widget.widgetParams!.usePhoneRegistration,
+                      ) &&
                       widget.widgetParams!.useEmailLogin)
                     Padding(
                       padding: const EdgeInsets.only(bottom: 5, top: 5),
@@ -213,7 +225,10 @@ class _NsgLoginregistrationState extends State<NsgLoginRegistrationWidget> {
                         ],
                       ),
                     ),
-                  if (widget.widgetParams!.usePhoneLogin)
+                  if (phoneRegistrationVisible(
+                    usePhoneLogin: widget.widgetParams!.usePhoneLogin,
+                    usePhoneRegistration: widget.widgetParams!.usePhoneRegistration,
+                  ))
                     if (loginType == NsgLoginType.phone)
                       TextFormField(
                         key: GlobalKey(),
@@ -341,6 +356,12 @@ class _NsgLoginregistrationState extends State<NsgLoginRegistrationWidget> {
   }) {
     var context = NsgNavigator.currentContext;
     if (!_formKey.currentState!.validate()) return;
+    if (phoneRegistrationCodeBlocked(
+      loginType: loginType,
+      usePhoneRegistration: widget.widgetParams!.usePhoneRegistration,
+    )) {
+      return;
+    }
     setState(() {
       isSMSRequested = true;
     });

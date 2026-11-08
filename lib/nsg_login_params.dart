@@ -24,6 +24,10 @@ class NsgLoginParams implements NsgLoginParamsInterface {
   ///Разрешить авторизацию по телефону
   bool usePhoneLogin;
 
+  /// Регистрация и восстановление пароля кодом по телефону.
+  /// Вход «телефон + пароль» от этого флага не зависит.
+  bool usePhoneRegistration;
+
   ///Разрешить авторизацию по email
   bool useEmailLogin;
 
@@ -107,6 +111,7 @@ class NsgLoginParams implements NsgLoginParamsInterface {
     this.loginHeaderText = 'Авторизация',
     this.usePasswordLogin = false,
     this.usePhoneLogin = true,
+    this.usePhoneRegistration = true,
     this.useEmailLogin = false,
     this.cardSize = 345.0,
     this.iconSize = 28.0,
@@ -258,6 +263,7 @@ class NsgLoginParamsDefault {
     phoneNumber: '',
     usePasswordLogin: false,
     usePhoneLogin: true,
+    usePhoneRegistration: true,
     useEmailLogin: false,
     cardSize: 345.0,
     iconSize: 28.0,
