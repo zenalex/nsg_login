@@ -1,8 +1,11 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:nsg_data/authorize/nsg_social_login_response.dart';
 import 'package:nsg_data/nsg_data_provider.dart';
 import 'package:nsg_login/helpers.dart';
+import 'package:nsg_controls/nsg_button.dart';
+import 'package:nsg_controls/dialog/nsg_future_progress_exception.dart';
 import 'package:nsg_login/social_login/default_login_types/default_login_dialog.dart';
 import 'package:nsg_login/social_login/max_auth/max_auth.dart';
 import 'package:nsg_login/social_login/social_login_types.dart';
@@ -10,10 +13,12 @@ import 'package:nsg_login/social_login/social_login_types.dart';
 abstract class MaxDefaultAuth extends SocialAuthType {
   String get botId;
 
-  /// Username бота MAX для deep-link (web.max.ru/<botUsername>?startapp=...).
+  /// Username бота MAX для deep-link (max.ru/<botUsername>?start=...).
   /// ОБЯЗАТЕЛЬНО переопределить реальным username — иначе deep-link не откроет
   /// нужного бота.
   String get botUsername;
+
+  String? get instructionText => null;
 
   String get buttonText => tran.login_via_social("MAX");
   TextStyle? get textStyle => null;
@@ -49,6 +54,7 @@ abstract class MaxDefaultAuth extends SocialAuthType {
         context,
         builder: (dialogContext) => MaxLoginWidget(
           title: socialName,
+          instructionText: instructionText,
           botId: botId,
           botUsername: botUsername,
           provider: provider,
@@ -108,7 +114,7 @@ abstract class MaxDefaultAuth extends SocialAuthType {
 /// Диалог входа через MAX: одна кнопка, которая открывает бота и ждёт
 /// подтверждения через webhook (поллинг нашего сервера). Телефон не нужен —
 /// личность приходит из MAX через бота.
-class MaxLoginWidget extends StatelessWidget {
+class MaxLoginWidget extends StatefulWidget {
   const MaxLoginWidget({
     super.key,
     required this.botId,
@@ -120,44 +126,91 @@ class MaxLoginWidget extends StatelessWidget {
     this.title,
     this.logo,
     this.timeout,
+    this.instructionText,
   });
-
   final String botId;
   final String botUsername;
   final NsgDataProvider provider;
   final String buttonText;
   final String? title;
+  final String? instructionText;
   final Duration? timeout;
   final Widget? logo;
-
-  /// Вызывается с nonce подтверждённой сессии.
-  final void Function(String nonce) onLoginSuccess;
+  final void Function(String state) onLoginSuccess;
   final void Function(dynamic error)? onAuthError;
 
   @override
-  Widget build(BuildContext context) {
-    return DefaultSocialLoginDialog(
-      title: title,
-      logo: logo,
-      buttonText: buttonText,
-      showPhoneInput: false,
-      onButtonPressed: (_) async {
-        final maxAuth = MaxAuth(
-          provider: provider,
-          botUsername: botUsername,
-          botId: botId,
-          timeout: timeout ?? const Duration(seconds: 90),
-        );
+  State<MaxLoginWidget> createState() => _MaxLoginWidgetState();
+}
 
-        await maxAuth.launchMax();
-        final confirmed = await maxAuth.waitForConfirmation();
-        if (confirmed) {
-          onLoginSuccess(maxAuth.nonce);
-        } else {
-          throw Exception('Login timeout');
-        }
-      },
-      onAuthError: onAuthError,
-    );
+class _MaxLoginWidgetState extends State<MaxLoginWidget> {
+  final _unusedPhone = TextEditingController();
+  MaxAuth? _auth;
+  bool _busy = false;
+
+  @override
+  void dispose() {
+    unawaited(_auth?.cancel() ?? Future<void>.value());
+    _unusedPhone.dispose();
+    super.dispose();
   }
+
+  Future<void> _login() async {
+    if (_busy) return;
+    setState(() => _busy = true);
+    final auth = MaxAuth(
+      provider: widget.provider,
+      botUsername: widget.botUsername,
+      botId: widget.botId,
+      timeout: widget.timeout ?? const Duration(seconds: 90),
+    );
+    _auth = auth;
+    try {
+      await nsgFutureProgressAndException(
+        showProgress: false,
+        func: () async {
+          try {
+            await auth.launchMax();
+            final confirmed = await auth.waitForConfirmation();
+            if (!mounted) return;
+            if (!confirmed) throw TimeoutException('MAX login timeout');
+            widget.onLoginSuccess(auth.takeConfirmedState());
+          } catch (error) {
+            if (!mounted) return;
+            if (widget.onAuthError != null) {
+              widget.onAuthError!(error);
+            } else {
+              rethrow;
+            }
+          }
+        },
+      );
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => DefaultSocialLoginDialogBody(
+    title: widget.title,
+    logo: widget.logo,
+    showPhoneInput: false,
+    phoneController: _unusedPhone,
+    body: Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (widget.instructionText != null)
+          Text(widget.instructionText!, textAlign: TextAlign.center),
+        NsgButton(text: widget.buttonText, disabled: _busy, onPressed: _login),
+        if (_busy) const LinearProgressIndicator(),
+        TextButton(
+          onPressed: () {
+            unawaited(_auth?.cancel() ?? Future<void>.value());
+            Navigator.of(context).pop();
+          },
+          child: Text(MaterialLocalizations.of(context).cancelButtonLabel),
+        ),
+      ],
+    ),
+  );
 }
