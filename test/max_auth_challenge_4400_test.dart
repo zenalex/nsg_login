@@ -1,6 +1,5 @@
 import 'dart:async';
-import 'package:url_launcher_platform_interface/link.dart';
-import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
+import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nsg_data/nsg_data.dart';
 import 'package:nsg_data/authorize/nsg_login_response.dart';
@@ -81,19 +80,6 @@ MaxAuth auth(
     return opens;
   },
 );
-
-class RecordingLauncher extends UrlLauncherPlatform {
-  @override
-  LinkDelegate? get linkDelegate => null;
-  LaunchOptions? options;
-  String? url;
-  @override
-  Future<bool> launchUrl(String url, LaunchOptions options) async {
-    this.url = url;
-    this.options = options;
-    return true;
-  }
-}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -220,26 +206,6 @@ void main() {
       expect(links, isEmpty);
     },
   );
-  test('real launcher explicitly keeps source tab with blank target', () async {
-    final old = UrlLauncherPlatform.instance;
-    final recorder = RecordingLauncher();
-    UrlLauncherPlatform.instance = recorder;
-    try {
-      final a = MaxAuth(
-        provider: Provider(),
-        botUsername: 'test_bot',
-        botId: '123',
-      );
-      await a.launchMax();
-      expect(recorder.options!.webOnlyWindowName, '_blank');
-      expect(recorder.url, 'https://max.ru/test_bot?start=$payload');
-      expect(a.startCommand, '/start $payload');
-      expect(a.startCommand, isNot(contains(state)));
-      await a.cancel();
-    } finally {
-      UrlLauncherPlatform.instance = old;
-    }
-  });
   test(
     'returning focus wakes long interval without concurrent polling',
     () async {
@@ -266,6 +232,31 @@ void main() {
       expect(await result.timeout(const Duration(seconds: 1)), isTrue);
       expect(p.polls, 2);
       a.takeConfirmedState();
+    },
+  );
+  test('actual LoginResponse wire omits zero code on confirmation', () async {
+    final p = Provider();
+    p.poll = () async =>
+        jsonDecode(
+              p.polls == 1
+                  ? '{"isAnonymous":true,"errorCode":40400}'
+                  : '{"isAnonymous":true}',
+            )
+            as Map<String, dynamic>;
+    final a = auth(p, []);
+    await a.launchMax();
+    expect(await a.waitForConfirmation(), isTrue);
+    expect(p.polls, 2);
+    a.takeConfirmedState();
+  });
+  test(
+    'anonymous marker with foreign login token is not poll confirmation',
+    () async {
+      final p = Provider()
+        ..poll = () async => {'isAnonymous': true, 'token': 'foreign'};
+      final a = auth(p, []);
+      await a.launchMax();
+      await expectLater(a.waitForConfirmation(), throwsStateError);
     },
   );
 }

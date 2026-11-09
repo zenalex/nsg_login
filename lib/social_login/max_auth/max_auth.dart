@@ -15,11 +15,7 @@ class MaxAuth {
     Future<bool> Function(Uri)? launcher,
   }) : _launcher =
            launcher ??
-           ((uri) => launchUrl(
-             uri,
-             mode: LaunchMode.externalApplication,
-             webOnlyWindowName: '_blank',
-           ));
+           ((uri) => launchUrl(uri, mode: LaunchMode.externalApplication));
 
   final NsgDataProvider provider;
   final String botUsername;
@@ -112,7 +108,14 @@ class MaxAuth {
         }
         if (_cancelled) return false;
         if (response != null) {
-          if (response['errorCode'] is! int) {
+          // Startup IgnoreAndPopulate omits ErrorCode=0 from confirmed LoginResponse.
+          // Require the anonymous poll marker; an empty/malformed map is not success.
+          final legacyConfirmed =
+              !response.containsKey('errorCode') &&
+              response['isAnonymous'] == true &&
+              (response['isError'] == null || response['isError'] == false) &&
+              (response['token'] == null || response['token'] == '');
+          if (response['errorCode'] is! int && !legacyConfirmed) {
             throw StateError('Invalid MAX poll response');
           }
           final reply = NsgLoginResponse.fromJson(response);
