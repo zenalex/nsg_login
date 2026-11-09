@@ -143,13 +143,26 @@ class MaxLoginWidget extends StatefulWidget {
   State<MaxLoginWidget> createState() => _MaxLoginWidgetState();
 }
 
-class _MaxLoginWidgetState extends State<MaxLoginWidget> {
+class _MaxLoginWidgetState extends State<MaxLoginWidget>
+    with WidgetsBindingObserver {
   final _unusedPhone = TextEditingController();
   MaxAuth? _auth;
   bool _busy = false;
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) _auth?.requestPoll();
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     unawaited(_auth?.cancel() ?? Future<void>.value());
     _unusedPhone.dispose();
     super.dispose();
@@ -171,6 +184,7 @@ class _MaxLoginWidgetState extends State<MaxLoginWidget> {
         func: () async {
           try {
             await auth.launchMax();
+            if (mounted) setState(() {});
             final confirmed = await auth.waitForConfirmation();
             if (!mounted) return;
             if (!confirmed) throw TimeoutException('MAX login timeout');
@@ -203,6 +217,8 @@ class _MaxLoginWidgetState extends State<MaxLoginWidget> {
           Text(widget.instructionText!, textAlign: TextAlign.center),
         NsgButton(text: widget.buttonText, disabled: _busy, onPressed: _login),
         if (_busy) const LinearProgressIndicator(),
+        if (_busy && _auth?.startCommand != null)
+          SelectableText(_auth!.startCommand!),
         TextButton(
           onPressed: () {
             unawaited(_auth?.cancel() ?? Future<void>.value());

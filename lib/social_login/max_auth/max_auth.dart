@@ -15,7 +15,11 @@ class MaxAuth {
     Future<bool> Function(Uri)? launcher,
   }) : _launcher =
            launcher ??
-           ((uri) => launchUrl(uri, mode: LaunchMode.externalApplication));
+           ((uri) => launchUrl(
+             uri,
+             mode: LaunchMode.externalApplication,
+             webOnlyWindowName: '_blank',
+           ));
 
   final NsgDataProvider provider;
   final String botUsername;
@@ -24,6 +28,7 @@ class MaxAuth {
   final Duration pollInterval;
   final Future<bool> Function(Uri) _launcher;
   final _cancelledSignal = Completer<void>();
+  var _pollWake = Completer<void>();
   String? _state;
   String? _payload;
   DateTime? _expires;
@@ -78,6 +83,12 @@ class MaxAuth {
     }
   }
 
+  String? get startCommand => _payload == null ? null : '/start $_payload';
+
+  void requestPoll() {
+    if (!_cancelled && !_pollWake.isCompleted) _pollWake.complete();
+  }
+
   Future<bool> waitForConfirmation() async {
     if (_state == null) throw StateError('MAX challenge has not started');
     var deadline = DateTime.now().add(timeout);
@@ -120,7 +131,9 @@ class MaxAuth {
         await Future.any<void>([
           Future<void>.delayed(pollInterval),
           _cancelledSignal.future,
+          _pollWake.future,
         ]);
+        _pollWake = Completer<void>();
       }
       await cancel();
       return false;

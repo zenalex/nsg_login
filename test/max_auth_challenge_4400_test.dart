@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'package:url_launcher_platform_interface/link.dart';
+import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nsg_data/nsg_data.dart';
 import 'package:nsg_data/authorize/nsg_login_response.dart';
@@ -79,6 +81,20 @@ MaxAuth auth(
     return opens;
   },
 );
+
+class RecordingLauncher extends UrlLauncherPlatform {
+  @override
+  LinkDelegate? get linkDelegate => null;
+  LaunchOptions? options;
+  String? url;
+  @override
+  Future<bool> launchUrl(String url, LaunchOptions options) async {
+    this.url = url;
+    this.options = options;
+    return true;
+  }
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   test(
@@ -202,6 +218,54 @@ void main() {
       final a = auth(p, links);
       await expectLater(a.launchMax(), throwsStateError);
       expect(links, isEmpty);
+    },
+  );
+  test('real launcher explicitly keeps source tab with blank target', () async {
+    final old = UrlLauncherPlatform.instance;
+    final recorder = RecordingLauncher();
+    UrlLauncherPlatform.instance = recorder;
+    try {
+      final a = MaxAuth(
+        provider: Provider(),
+        botUsername: 'test_bot',
+        botId: '123',
+      );
+      await a.launchMax();
+      expect(recorder.options!.webOnlyWindowName, '_blank');
+      expect(recorder.url, 'https://max.ru/test_bot?start=$payload');
+      expect(a.startCommand, '/start $payload');
+      expect(a.startCommand, isNot(contains(state)));
+      await a.cancel();
+    } finally {
+      UrlLauncherPlatform.instance = old;
+    }
+  });
+  test(
+    'returning focus wakes long interval without concurrent polling',
+    () async {
+      final p = Provider();
+      final first = Completer<void>();
+      p.poll = () async {
+        if (p.polls == 1) {
+          first.complete();
+          return {'errorCode': 40400};
+        }
+        return {'errorCode': 0};
+      };
+      final a = MaxAuth(
+        provider: p,
+        botUsername: 'test_bot',
+        botId: '123',
+        pollInterval: const Duration(seconds: 30),
+        launcher: (_) async => true,
+      );
+      await a.launchMax();
+      final result = a.waitForConfirmation();
+      await first.future;
+      a.requestPoll();
+      expect(await result.timeout(const Duration(seconds: 1)), isTrue);
+      expect(p.polls, 2);
+      a.takeConfirmedState();
     },
   );
 }

@@ -69,6 +69,7 @@ dependencies:
     path: packages/flutter_login_vk
 
 dev_dependencies:
+  url_launcher_platform_interface: ^2.3.2
   flutter_test:
     sdk: flutter
   flutter_lints: ^2.0.0
