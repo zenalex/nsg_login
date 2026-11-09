@@ -74,6 +74,9 @@ class _LoginWidgetNewState extends State<LoginWidgetNew> {
   bool _obscureLoginPassword = true;
   bool _obscureNewPassword1 = true;
   bool _obscureNewPassword2 = true;
+  bool _telegramRecovery = false;
+  bool _telegramRecoveryBusy = false;
+  String _telegramRecoveryText = '';
 
   static int stagePreLogin = 1;
 
@@ -489,6 +492,7 @@ class _LoginWidgetNewState extends State<LoginWidgetNew> {
             currentState == NsgLoginState.login)) {
       if (currentState == NsgLoginState.registration ||
           !widget.widgetParams.usePasswordLogin) {
+        _telegramRecovery = false;
         currentState = NsgLoginState.verification;
       } else {
         isLoginSuccessfull = true;
@@ -844,6 +848,28 @@ class _LoginWidgetNewState extends State<LoginWidgetNew> {
         )
       else
         const SizedBox(height: 10),
+      if (widget.widgetParams.requestTelegramRecovery != null &&
+          widget.widgetParams.usePhoneLogin &&
+          loginType == NsgLoginType.phone)
+        Align(
+          alignment: Alignment.centerRight,
+          child: Padding(
+            padding: const EdgeInsets.only(top: 8, bottom: 4),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                _link(widget.widgetParams.textTelegramRecovery, () {
+                  if (_telegramRecoveryBusy) return;
+                  unawaited(_requestTelegramRecovery(context, 'telegram'));
+                }),
+                _link(widget.widgetParams.textMaxRecovery, () {
+                  if (_telegramRecoveryBusy) return;
+                  unawaited(_requestTelegramRecovery(context, 'max'));
+                }),
+              ],
+            ),
+          ),
+        ),
       if (widget.widgetParams.useCaptcha)
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -931,6 +957,46 @@ class _LoginWidgetNewState extends State<LoginWidgetNew> {
       usePhoneRegistration: widget.widgetParams.usePhoneRegistration,
     );
     return [
+      if (widget.widgetParams.requestMessengerPhoneAccess != null) ...[
+        Padding(
+          padding: const EdgeInsets.only(bottom: 10),
+          child: Text(
+            widget.widgetParams.textMessengerPhoneAccess,
+            style: TextStyle(
+              color: nsgtheme.colorText,
+              fontSize: nsgtheme.sizeM,
+              height: 1.35,
+            ),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.only(bottom: 10),
+          child: TextFormField(
+            key: const ValueKey('nsgLogin.registration.messengerPhone'),
+            cursorColor: Theme.of(context).primaryColor,
+            keyboardType: TextInputType.phone,
+            inputFormatters: [phoneFormatter],
+            style: _fieldTextStyle,
+            textAlign: TextAlign.start,
+            decoration: decor.copyWith(
+              hintText: widget.widgetParams.textEnterPhone,
+            ),
+            initialValue: phoneNumber,
+            onChanged: (value) => phoneNumber = value,
+            validator: (value) => null,
+          ),
+        ),
+        _primaryButton(
+          text: 'Telegram',
+          onPressed: () => unawaited(_messengerAccess(context, 'telegram')),
+        ),
+        const SizedBox(height: 8),
+        _primaryButton(
+          text: 'MAX',
+          onPressed: () => unawaited(_messengerAccess(context, 'max')),
+        ),
+        const SizedBox(height: 16),
+      ],
       if (showPhoneRegistration && widget.widgetParams.useEmailLogin)
         Padding(
           padding: const EdgeInsets.only(bottom: 12),
@@ -1040,7 +1106,9 @@ class _LoginWidgetNewState extends State<LoginWidgetNew> {
       Padding(
         padding: const EdgeInsets.only(bottom: 12),
         child: Text(
-          loginType == NsgLoginType.email
+          _telegramRecovery
+              ? _telegramRecoveryText
+              : loginType == NsgLoginType.email
               ? tran.we_sent_you_the_code_in_a_message_by_email_phone(email)
               : tran.we_sent_you_a_code_via_sms_to_your_phone_number(
                   phoneNumber,
@@ -1147,6 +1215,7 @@ class _LoginWidgetNewState extends State<LoginWidgetNew> {
         child: InkWell(
           onTap: () {
             currentState = NsgLoginState.login;
+            _telegramRecovery = false;
             setState(() {});
           },
           child: Padding(
@@ -1356,6 +1425,78 @@ class _LoginWidgetNewState extends State<LoginWidgetNew> {
         ),
       ),
     );
+  }
+
+  Future<void> _messengerAccess(BuildContext context, String channel) async {
+    final request = widget.widgetParams.requestMessengerPhoneAccess;
+    if (request == null || _telegramRecoveryBusy) return;
+    if (!isPhoneValid(phoneNumber) || phoneNumber.length < 9) {
+      widget.widgetParams.showError(
+        context,
+        widget.widgetParams.textEnterCorrectPhone,
+      );
+      return;
+    }
+    _telegramRecoveryBusy = true;
+    try {
+      final code = await request(phoneNumber, channel);
+      if (!context.mounted || code == -1) return;
+      if (code == 0) {
+        widget.widgetParams.eventLoginWidgweClosed?.call(true);
+        if (widget.widgetParams.onLogin != null) {
+          widget.widgetParams.onLogin!();
+        } else {
+          NsgNavigator.instance.offAndToPage(widget.widgetParams.mainPage);
+        }
+        return;
+      }
+      widget.widgetParams.showError(
+        context,
+        widget.widgetParams.errorMessage(code),
+      );
+    } catch (_) {
+      if (!context.mounted) return;
+      widget.widgetParams.showError(
+        context,
+        widget.widgetParams.textCheckInternet,
+      );
+    } finally {
+      _telegramRecoveryBusy = false;
+    }
+  }
+
+  Future<void> _requestTelegramRecovery(
+    BuildContext context,
+    String channel,
+  ) async {
+    final request = widget.widgetParams.requestTelegramRecovery;
+    if (request == null || _telegramRecoveryBusy) return;
+    if (!isPhoneValid(phoneNumber) || phoneNumber.length < 9) {
+      widget.widgetParams.showError(
+        context,
+        widget.widgetParams.textEnterCorrectPhone,
+      );
+      return;
+    }
+    _telegramRecoveryBusy = true;
+    try {
+      final message = await request(phoneNumber, channel);
+      if (!context.mounted) return;
+      setState(() {
+        _telegramRecovery = true;
+        _telegramRecoveryText = message;
+        loginType = NsgLoginType.phone;
+        currentState = NsgLoginState.verification;
+      });
+    } catch (_) {
+      if (!context.mounted) return;
+      widget.widgetParams.showError(
+        context,
+        widget.widgetParams.textCheckInternet,
+      );
+    } finally {
+      _telegramRecoveryBusy = false;
+    }
   }
 
   void setNewPassword(

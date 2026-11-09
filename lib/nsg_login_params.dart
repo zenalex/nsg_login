@@ -98,6 +98,19 @@ class NsgLoginParams implements NsgLoginParamsInterface {
   final PasswordStrength? Function(String password)? passwordIndicator;
   final String? Function(String? password)? passwordValidator;
 
+  /// Код восстановления в уже открытый чат. null — кнопки не показываем.
+  /// Ответ один и тот же, есть учётка или нет. channel: telegram или max.
+  final Future<String> Function(String phone, String channel)?
+  requestTelegramRecovery;
+  String textTelegramRecovery;
+  String textMaxRecovery;
+
+  /// Доступ по своему контакту. 0 — токен уже записан в провайдер.
+  /// SMS этим колбэком не включается.
+  final Future<int> Function(String phone, String channel)?
+  requestMessengerPhoneAccess;
+  String textMessengerPhoneAccess;
+
   bool? appbar;
   bool? headerMessageVisible;
 
@@ -163,6 +176,12 @@ class NsgLoginParams implements NsgLoginParamsInterface {
     this.eventLoginWidgweClosed,
     this.passwordIndicator,
     this.passwordValidator,
+    this.requestTelegramRecovery,
+    this.textTelegramRecovery = 'Код в Telegram',
+    this.textMaxRecovery = 'Код в MAX',
+    this.requestMessengerPhoneAccess,
+    this.textMessengerPhoneAccess =
+        'Подтвердите номер через Telegram или MAX. Если номер уже есть у учётки, откроется ваш аккаунт.',
     this.socialLoginTypes = const [],
   }) {
     headerMessageStyle ??= TextStyle(
