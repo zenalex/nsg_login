@@ -19,6 +19,8 @@ import 'package:nsg_data/password/nsg_login_password_strength.dart';
 import 'package:nsg_login/social_login/social_login_exception.dart';
 import 'package:nsg_login/password_strength_ui.dart';
 import 'package:nsg_login/helpers.dart';
+import 'package:nsg_login/messenger_phone_dialog.dart';
+import 'package:nsg_login/messenger_phone_flow.dart';
 import 'package:nsg_login/nsg_login_params.dart';
 import 'package:nsg_login/phone_registration_gate.dart';
 import 'package:nsg_login/one_time_code.dart';
@@ -311,7 +313,8 @@ class _LoginWidgetNewState extends State<LoginWidgetNew> {
                       currentState = NsgLoginState.registration;
                       loginType = registrationIdentityType(
                         current: loginType,
-                        usePhoneRegistration: widget.widgetParams.usePhoneRegistration,
+                        usePhoneRegistration:
+                            widget.widgetParams.usePhoneRegistration,
                         useEmailLogin: widget.widgetParams.useEmailLogin,
                       );
                     });
@@ -386,10 +389,12 @@ class _LoginWidgetNewState extends State<LoginWidgetNew> {
   }
 
   Widget _primaryButton({
+    Key? key,
     required VoidCallback onPressed,
     required String text,
   }) {
     return Material(
+      key: key,
       color: nsgtheme.colorPrimary,
       borderRadius: BorderRadius.circular(12),
       child: InkWell(
@@ -819,7 +824,8 @@ class _LoginWidgetNewState extends State<LoginWidgetNew> {
                       currentState = NsgLoginState.registration;
                       loginType = registrationIdentityType(
                         current: loginType,
-                        usePhoneRegistration: widget.widgetParams.usePhoneRegistration,
+                        usePhoneRegistration:
+                            widget.widgetParams.usePhoneRegistration,
                         useEmailLogin: widget.widgetParams.useEmailLogin,
                       );
                     });
@@ -848,7 +854,25 @@ class _LoginWidgetNewState extends State<LoginWidgetNew> {
         )
       else
         const SizedBox(height: 10),
-      if (widget.widgetParams.requestTelegramRecovery != null &&
+      if (widget.widgetParams.beginMessengerPhone != null &&
+          widget.widgetParams.requestTelegramRecovery != null &&
+          widget.widgetParams.usePhoneLogin &&
+          loginType == NsgLoginType.phone)
+        Align(
+          alignment: Alignment.centerRight,
+          child: Padding(
+            padding: const EdgeInsets.only(top: 8, bottom: 4),
+            child: _link(widget.widgetParams.textPhoneRecovery, () {
+              unawaited(
+                _openMessengerPhoneDialog(
+                  context,
+                  MessengerPhoneIntent.recovery,
+                ),
+              );
+            }),
+          ),
+        )
+      else if (widget.widgetParams.requestTelegramRecovery != null &&
           widget.widgetParams.usePhoneLogin &&
           loginType == NsgLoginType.phone)
         Align(
@@ -956,8 +980,39 @@ class _LoginWidgetNewState extends State<LoginWidgetNew> {
       usePhoneLogin: widget.widgetParams.usePhoneLogin,
       usePhoneRegistration: widget.widgetParams.usePhoneRegistration,
     );
+    final messengerDialog = widget.widgetParams.beginMessengerPhone != null;
     return [
-      if (widget.widgetParams.requestMessengerPhoneAccess != null) ...[
+      if (messengerDialog) ...[
+        Padding(
+          padding: const EdgeInsets.only(bottom: 10),
+          child: Text(
+            widget.widgetParams.textMessengerPhoneAccess,
+            style: TextStyle(
+              color: nsgtheme.colorText,
+              fontSize: nsgtheme.sizeM,
+              height: 1.35,
+            ),
+          ),
+        ),
+        _primaryButton(
+          key: const ValueKey('nsgLogin.registration.phoneRegister'),
+          text: widget.widgetParams.textPhoneRegistration,
+          onPressed: () => unawaited(
+            _openMessengerPhoneDialog(context, MessengerPhoneIntent.access),
+          ),
+        ),
+        if (widget.widgetParams.requestTelegramRecovery != null) ...[
+          const SizedBox(height: 8),
+          _primaryButton(
+            key: const ValueKey('nsgLogin.registration.phoneRecover'),
+            text: widget.widgetParams.textPhoneRecovery,
+            onPressed: () => unawaited(
+              _openMessengerPhoneDialog(context, MessengerPhoneIntent.recovery),
+            ),
+          ),
+        ],
+        const SizedBox(height: 16),
+      ] else if (widget.widgetParams.requestMessengerPhoneAccess != null) ...[
         Padding(
           padding: const EdgeInsets.only(bottom: 10),
           child: Text(
@@ -1394,10 +1449,7 @@ class _LoginWidgetNewState extends State<LoginWidgetNew> {
                     // в fatal и заваливал трекер (#1594).
                     debugPrint('Social login refused: $e');
                     if (context.mounted) {
-                      nsgSnackbar(
-                        text: e.message,
-                        type: NsgSnarkBarType.error,
-                      );
+                      nsgSnackbar(text: e.message, type: NsgSnarkBarType.error);
                     }
                     if (!e.isExpected) rethrow;
                   } catch (e) {
@@ -1425,6 +1477,59 @@ class _LoginWidgetNewState extends State<LoginWidgetNew> {
         ),
       ),
     );
+  }
+
+  MessengerPhoneDialogText get _messengerDialogText => MessengerPhoneDialogText(
+    registerTitle: widget.widgetParams.textPhoneRegistration,
+    recoveryTitle: widget.widgetParams.textPhoneRecovery,
+    steps: widget.widgetParams.textMessengerPhoneSteps,
+    recoverySteps: widget.widgetParams.textMessengerPhoneRecoverySteps,
+    phoneHint: widget.widgetParams.textEnterPhone,
+    invalidPhone: widget.widgetParams.textEnterCorrectPhone,
+    waiting: widget.widgetParams.textMessengerPhoneWaiting,
+    openAgain: widget.widgetParams.textMessengerPhoneOpenAgain,
+    chooseOther: widget.widgetParams.textMessengerPhoneChooseOther,
+    cancel: widget.widgetParams.textMessengerPhoneCancel,
+  );
+
+  Future<void> _openMessengerPhoneDialog(
+    BuildContext context,
+    MessengerPhoneIntent intent,
+  ) async {
+    final begin = widget.widgetParams.beginMessengerPhone;
+    final poll = widget.widgetParams.pollMessengerPhone;
+    if (begin == null || poll == null) return;
+    final outcome = await showDialog<MessengerPhoneDialogOutcome>(
+      context: context,
+      builder: (_) => MessengerPhoneDialog(
+        intent: intent,
+        text: _messengerDialogText,
+        begin: begin,
+        poll: poll,
+        recovery: widget.widgetParams.requestTelegramRecovery,
+        openUrl: widget.widgetParams.openMessengerUrl,
+        errorText: widget.widgetParams.errorMessage,
+      ),
+    );
+    if (!context.mounted || outcome == null) return;
+    phoneNumber = outcome.phone;
+    if (outcome.accessConfirmed) {
+      widget.widgetParams.eventLoginWidgweClosed?.call(true);
+      if (widget.widgetParams.onLogin != null) {
+        widget.widgetParams.onLogin!();
+      } else {
+        NsgNavigator.instance.offAndToPage(widget.widgetParams.mainPage);
+      }
+      return;
+    }
+    final message = outcome.recoveryMessage;
+    if (message == null) return;
+    setState(() {
+      _telegramRecovery = true;
+      _telegramRecoveryText = message;
+      loginType = NsgLoginType.phone;
+      currentState = NsgLoginState.verification;
+    });
   }
 
   Future<void> _messengerAccess(BuildContext context, String channel) async {
