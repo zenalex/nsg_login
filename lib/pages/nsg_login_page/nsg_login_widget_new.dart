@@ -19,6 +19,7 @@ import 'package:nsg_data/password/nsg_login_password_strength.dart';
 import 'package:nsg_login/social_login/social_login_exception.dart';
 import 'package:nsg_login/password_strength_ui.dart';
 import 'package:nsg_login/helpers.dart';
+import 'package:nsg_login/messenger_direct_login.dart';
 import 'package:nsg_login/messenger_phone_dialog.dart';
 import 'package:nsg_login/messenger_phone_flow.dart';
 import 'package:nsg_login/nsg_login_params.dart';
@@ -30,6 +31,7 @@ import 'package:nsg_login/pages/nsg_social_login_widget.dart';
 import 'package:nsg_login/social_login/default_login_types/telegram_default_login.dart';
 import 'package:nsg_login/social_login/default_login_types/telegram_oauth_wait.dart';
 import 'package:nsg_login/social_login/social_login_provider.dart';
+import 'package:nsg_login/social_login/social_login_types.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class LoginWidgetNew extends StatefulWidget {
@@ -1404,29 +1406,29 @@ class _LoginWidgetNewState extends State<LoginWidgetNew> {
             // #4543: в вебе cookie oauth.telegram.org недоступны, опрос молчит.
             // Кнопка открывает тот же диалог бота, что подтверждение номера.
             // Без колбэков #4376 кнопку не показываем.
+            final messengerReady =
+                widget.widgetParams.beginMessengerPhone != null &&
+                widget.widgetParams.pollMessengerPhone != null;
             if (i is TelegramDefaultAuth) {
               final route = routeTelegramLogin(
                 isWeb: kIsWeb,
-                messengerReady:
-                    widget.widgetParams.beginMessengerPhone != null &&
-                    widget.widgetParams.pollMessengerPhone != null,
+                messengerReady: messengerReady,
               );
               if (route == TelegramLoginRoute.hidden) {
                 return const SizedBox.shrink();
               }
               if (route == TelegramLoginRoute.messengerBot) {
-                return Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 4),
-                  child: SizedBox(
-                    width: double.infinity,
-                    child: i.socialLoginButton(() {
-                      _openMessengerPhoneDialog(
-                        context,
-                        MessengerPhoneIntent.access,
-                      );
-                    }),
-                  ),
-                );
+                return _directMessengerButton(context, i, 'telegram');
+              }
+            }
+            if (opensDirectMessengerDialog(
+              type: i,
+              isWeb: kIsWeb,
+              messengerReady: messengerReady,
+            )) {
+              final channel = directMessengerChannel(i);
+              if (channel != null) {
+                return _directMessengerButton(context, i, channel);
               }
             }
             Future<void> onSocialTap() async {
@@ -1533,10 +1535,31 @@ class _LoginWidgetNewState extends State<LoginWidgetNew> {
     enterCode: widget.widgetParams.textMessengerPhoneEnterCode,
   );
 
+  Widget _directMessengerButton(
+    BuildContext context,
+    SocialAuthType type,
+    String channel,
+  ) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: SizedBox(
+        width: double.infinity,
+        child: type.socialLoginButton(() {
+          _openMessengerPhoneDialog(
+            context,
+            MessengerPhoneIntent.access,
+            fixedChannel: channel,
+          );
+        }),
+      ),
+    );
+  }
+
   Future<void> _openMessengerPhoneDialog(
     BuildContext context,
-    MessengerPhoneIntent intent,
-  ) async {
+    MessengerPhoneIntent intent, {
+    String? fixedChannel,
+  }) async {
     final begin = widget.widgetParams.beginMessengerPhone;
     final poll = widget.widgetParams.pollMessengerPhone;
     if (begin == null || poll == null) return;
@@ -1550,6 +1573,8 @@ class _LoginWidgetNewState extends State<LoginWidgetNew> {
         recovery: widget.widgetParams.requestTelegramRecovery,
         openUrl: widget.widgetParams.openMessengerUrl,
         errorText: widget.widgetParams.errorMessage,
+        fixedChannel: fixedChannel,
+        initialPhone: fixedChannel == null ? null : phoneNumber,
       ),
     );
     if (!context.mounted || outcome == null) return;

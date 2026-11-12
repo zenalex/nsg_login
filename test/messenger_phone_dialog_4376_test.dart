@@ -210,6 +210,11 @@ void main() {
         find.byKey(const ValueKey('messengerPhone.phone')),
         '79990001122',
       );
+      expect(
+        find.byKey(const ValueKey('messengerPhone.telegram')),
+        findsOneWidget,
+      );
+      expect(find.byKey(const ValueKey('messengerPhone.max')), findsOneWidget);
       await tester.tap(find.byKey(const ValueKey('messengerPhone.telegram')));
       await tester.pumpAndSettle();
 
@@ -230,4 +235,135 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
+
+  Future<void> openFixed(
+    WidgetTester tester, {
+    required String channel,
+    required List<String> begins,
+    required List<String> opened,
+    String? initialPhone,
+    Completer<void>? polling,
+  }) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Builder(
+            builder: (context) => TextButton(
+              onPressed: () {
+                showDialog<void>(
+                  context: context,
+                  builder: (_) => MessengerPhoneDialog(
+                    intent: MessengerPhoneIntent.access,
+                    text: text,
+                    fixedChannel: channel,
+                    initialPhone: initialPhone,
+                    begin: (phone, chosen) async {
+                      begins.add('$chosen:$phone');
+                      return MessengerPhoneBeginResult(
+                        url: 'https://t.me/FutbolistaBot?start=$chosen',
+                        payload: chosen,
+                      );
+                    },
+                    poll: (_, cancelled) async {
+                      if (polling != null && !polling.isCompleted) {
+                        polling.complete();
+                      }
+                      while (!cancelled()) {
+                        await Future<void>.delayed(
+                          const Duration(milliseconds: 20),
+                        );
+                      }
+                      return const MessengerPhonePollResult(cancelled: true);
+                    },
+                    errorText: (code) => 'отказ $code',
+                    phoneValid: (phone) => phone.trim().length >= 9,
+                    openUrl: (url) async {
+                      opened.add(url);
+                    },
+                  ),
+                );
+              },
+              child: const Text('open'),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('open'));
+    await tester.pump();
+  }
+
+  testWidgets('прямой вход не спрашивает канал и открывает нажатый', (
+    tester,
+  ) async {
+    final begins = <String>[];
+    final opened = <String>[];
+    final polling = Completer<void>();
+    await openFixed(
+      tester,
+      channel: 'telegram',
+      initialPhone: '79990001122',
+      begins: begins,
+      opened: opened,
+      polling: polling,
+    );
+    await polling.future.timeout(const Duration(seconds: 2));
+    await tester.pump();
+
+    expect(begins, ['telegram:79990001122']);
+    expect(opened, ['https://t.me/FutbolistaBot?start=telegram']);
+    expect(find.text('Откроется бот Futbolista'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('messengerPhone.waiting')),
+      findsOneWidget,
+    );
+    expect(find.byKey(const ValueKey('messengerPhone.telegram')), findsNothing);
+    expect(find.byKey(const ValueKey('messengerPhone.max')), findsNothing);
+    expect(find.byKey(const ValueKey('messengerPhone.other')), findsNothing);
+
+    await tester.tap(find.byKey(const ValueKey('messengerPhone.cancel')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 40));
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('прямой MAX без номера ждёт номер и шлёт max', (tester) async {
+    final begins = <String>[];
+    final opened = <String>[];
+    final polling = Completer<void>();
+    await openFixed(
+      tester,
+      channel: 'max',
+      begins: begins,
+      opened: opened,
+      polling: polling,
+    );
+
+    expect(find.byKey(const ValueKey('messengerPhone.telegram')), findsNothing);
+    expect(find.byKey(const ValueKey('messengerPhone.max')), findsNothing);
+    expect(find.byKey(const ValueKey('messengerPhone.open')), findsOneWidget);
+    expect(begins, isEmpty);
+
+    await tester.enterText(
+      find.byKey(const ValueKey('messengerPhone.phone')),
+      '79990001122',
+    );
+    await tester.tap(find.byKey(const ValueKey('messengerPhone.open')));
+    await polling.future.timeout(const Duration(seconds: 2));
+    await tester.pump();
+
+    expect(begins, hasLength(1));
+    expect(begins.single, startsWith('max:'));
+    expect(begins.single, contains('999'));
+    expect(opened, ['https://t.me/FutbolistaBot?start=max']);
+    expect(
+      find.byKey(const ValueKey('messengerPhone.waiting')),
+      findsOneWidget,
+    );
+
+    await tester.tap(find.byKey(const ValueKey('messengerPhone.cancel')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 40));
+    expect(tester.takeException(), isNull);
+  });
 }

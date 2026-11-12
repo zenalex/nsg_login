@@ -52,6 +52,8 @@ class MessengerPhoneDialog extends StatefulWidget {
     this.recovery,
     this.openUrl,
     this.phoneValid,
+    this.fixedChannel,
+    this.initialPhone,
   });
 
   final MessengerPhoneIntent intent;
@@ -72,6 +74,11 @@ class MessengerPhoneDialog extends StatefulWidget {
   final Future<void> Function(String url)? openUrl;
   final bool Function(String phone)? phoneValid;
 
+  /// Канал уже выбран кнопкой входа. null — регистрация и восстановление,
+  /// там остаются обе кнопки.
+  final String? fixedChannel;
+  final String? initialPhone;
+
   @override
   State<MessengerPhoneDialog> createState() => _MessengerPhoneDialogState();
 }
@@ -85,6 +92,20 @@ class _MessengerPhoneDialogState extends State<MessengerPhoneDialog> {
   String? _url;
   String? _error;
   String? _recoveryMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    final initial = widget.initialPhone?.trim() ?? '';
+    if (initial.isNotEmpty) _phone.text = initial;
+    final channel = widget.fixedChannel;
+    if (channel != null && _phoneOk(_phone.text)) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted || _waiting || _beginInFlight) return;
+        _choose(channel);
+      });
+    }
+  }
 
   @override
   void dispose() {
@@ -298,12 +319,14 @@ class _MessengerPhoneDialogState extends State<MessengerPhoneDialog> {
                         : () => widget.openUrl?.call(_url!),
                     child: Text(text.openAgain),
                   ),
-                  const SizedBox(height: 8),
-                  OutlinedButton(
-                    key: const ValueKey('messengerPhone.other'),
-                    onPressed: _stopWaiting,
-                    child: Text(text.chooseOther),
-                  ),
+                  if (widget.fixedChannel == null) ...[
+                    const SizedBox(height: 8),
+                    OutlinedButton(
+                      key: const ValueKey('messengerPhone.other'),
+                      onPressed: _stopWaiting,
+                      child: Text(text.chooseOther),
+                    ),
+                  ],
                 ] else ...[
                   TextFormField(
                     key: const ValueKey('messengerPhone.phone'),
@@ -311,6 +334,9 @@ class _MessengerPhoneDialogState extends State<MessengerPhoneDialog> {
                     keyboardType: TextInputType.phone,
                     inputFormatters: [_phoneFormatter],
                     decoration: InputDecoration(hintText: text.phoneHint),
+                    onFieldSubmitted: widget.fixedChannel == null
+                        ? null
+                        : (_) => _choose(widget.fixedChannel!),
                   ),
                   if (_error != null) ...[
                     const SizedBox(height: 8),
@@ -328,25 +354,38 @@ class _MessengerPhoneDialogState extends State<MessengerPhoneDialog> {
                     ),
                   ],
                   const SizedBox(height: 12),
-                  Align(
-                    alignment: Alignment.center,
-                    child: SocialLoginButton(
-                      key: const ValueKey('messengerPhone.telegram'),
-                      onTap: _beginInFlight ? () {} : () => _choose('telegram'),
-                      logo: _brandIcon(_telegramSvg, 'Telegram'),
-                      buttonText: text.telegram,
+                  if (widget.fixedChannel == null) ...[
+                    Align(
+                      alignment: Alignment.center,
+                      child: SocialLoginButton(
+                        key: const ValueKey('messengerPhone.telegram'),
+                        onTap: _beginInFlight
+                            ? () {}
+                            : () => _choose('telegram'),
+                        logo: _brandIcon(_telegramSvg, 'Telegram'),
+                        buttonText: text.telegram,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 8),
-                  Align(
-                    alignment: Alignment.center,
-                    child: SocialLoginButton(
-                      key: const ValueKey('messengerPhone.max'),
-                      onTap: _beginInFlight ? () {} : () => _choose('max'),
-                      logo: _brandIcon(_maxSvg, 'MAX'),
-                      buttonText: text.max,
+                    const SizedBox(height: 8),
+                    Align(
+                      alignment: Alignment.center,
+                      child: SocialLoginButton(
+                        key: const ValueKey('messengerPhone.max'),
+                        onTap: _beginInFlight ? () {} : () => _choose('max'),
+                        logo: _brandIcon(_maxSvg, 'MAX'),
+                        buttonText: text.max,
+                      ),
                     ),
-                  ),
+                  ] else
+                    OutlinedButton(
+                      key: const ValueKey('messengerPhone.open'),
+                      onPressed: _beginInFlight
+                          ? null
+                          : () => _choose(widget.fixedChannel!),
+                      child: Text(
+                        widget.fixedChannel == 'max' ? text.max : text.telegram,
+                      ),
+                    ),
                 ],
                 const SizedBox(height: 8),
                 TextButton(
