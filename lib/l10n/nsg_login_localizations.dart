@@ -364,6 +364,12 @@ abstract class NsgLoginLocalizations {
   /// In ru, this message translates to:
   /// **'Забыл пароль'**
   String get forgot_password;
+
+  /// No description provided for @telegram_login_failed.
+  ///
+  /// In ru, this message translates to:
+  /// **'Не удалось войти через Telegram. Подтвердите вход в Telegram и попробуйте снова.'**
+  String get telegram_login_failed;
 }
 
 class _NsgLoginLocalizationsDelegate

@@ -42,5 +42,6 @@
   "enter_confirmation_code_from_message": "Enter confirmation code from message",
   "password_is_required": "Password is required",
   "passwords_mistmatch": "Passwords mistmatch",
-  "forgot_password": "Forgot password"
+  "forgot_password": "Forgot password",
+  "telegram_login_failed": "Could not sign in with Telegram. Confirm the login in Telegram and try again."
 }

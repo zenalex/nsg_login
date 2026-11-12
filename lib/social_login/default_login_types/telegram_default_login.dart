@@ -4,6 +4,7 @@ import 'package:nsg_data/authorize/nsg_social_login_response.dart';
 import 'package:nsg_data/nsg_data_provider.dart';
 import 'package:nsg_login/helpers.dart';
 import 'package:nsg_login/social_login/default_login_types/default_login_dialog.dart';
+import 'package:nsg_login/social_login/default_login_types/telegram_oauth_wait.dart';
 import 'package:nsg_login/social_login/social_login_types.dart';
 import 'package:telegram_login_flutter/telegram_login_flutter.dart';
 
@@ -94,7 +95,32 @@ abstract class TelegramDefaultAuth extends SocialAuthType {
   String get socialName => "Telegram";
 }
 
-class TelegramLoginWidget extends StatelessWidget {
+/// Подмена oauth-клиента в тесте. В приложении — [TelegramPluginOauth].
+abstract class TelegramOauthGateway {
+  Future<void> start(String phoneNumber);
+  Future<bool> checkLoginStatus();
+  Future<TelegramUser?> getUserData();
+}
+
+class TelegramPluginOauth implements TelegramOauthGateway {
+  TelegramPluginOauth(this._auth);
+
+  final TelegramAuth _auth;
+
+  @override
+  Future<void> start(String phoneNumber) async {
+    await _auth.launchTelegram();
+    await _auth.initiateLogin();
+  }
+
+  @override
+  Future<bool> checkLoginStatus() => _auth.checkLoginStatus();
+
+  @override
+  Future<TelegramUser?> getUserData() => _auth.getUserData();
+}
+
+class TelegramLoginWidget extends StatefulWidget {
   const TelegramLoginWidget({
     super.key,
     required this.botId,
@@ -107,6 +133,10 @@ class TelegramLoginWidget extends StatelessWidget {
     this.logo,
     this.inputDecoration,
     this.cursorColor,
+    this.oauth,
+    this.pollInterval = const Duration(seconds: 2),
+    this.delay,
+    this.now,
   });
 
   final String botId;
@@ -119,68 +149,104 @@ class TelegramLoginWidget extends StatelessWidget {
   final void Function(dynamic error)? onAuthError;
   final InputDecoration? inputDecoration;
   final Color? cursorColor;
+  final TelegramOauthGateway Function(String phoneNumber, Duration timeout)?
+  oauth;
+  final Duration pollInterval;
+  final Future<void> Function(Duration step)? delay;
+  final DateTime Function()? now;
+
+  @override
+  State<TelegramLoginWidget> createState() => _TelegramLoginWidgetState();
+}
+
+class _TelegramLoginWidgetState extends State<TelegramLoginWidget>
+    with WidgetsBindingObserver {
+  final _phone = TextEditingController();
+  String? _error;
+  TelegramOauthWait? _wait;
+  var _closed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    _closed = true;
+    WidgetsBinding.instance.removeObserver(this);
+    _phone.dispose();
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    final wait = _wait;
+    if (wait == null) return;
+    if (state == AppLifecycleState.resumed) {
+      wait.noteResume();
+    } else {
+      wait.notePause();
+    }
+  }
+
+  Future<void> _login(String phoneNumber) async {
+    if (mounted) setState(() => _error = null);
+    final timeout = widget.timeout ?? telegramOauthActiveTimeout;
+    final gateway =
+        widget.oauth?.call(phoneNumber, timeout) ??
+        TelegramPluginOauth(
+          TelegramAuth(
+            phoneNumber: phoneNumber,
+            botId: widget.botId,
+            botDomain: widget.botDomain,
+            timeout: timeout,
+          ),
+        );
+    final wait = TelegramOauthWait(timeout: timeout, now: widget.now);
+    _wait = wait;
+    try {
+      await gateway.start(phoneNumber);
+      final user = await waitTelegramOauth<TelegramUser>(
+        wait: wait,
+        isLoggedIn: gateway.checkLoginStatus,
+        readUser: gateway.getUserData,
+        delay: widget.delay ?? (step) => Future<void>.delayed(step),
+        interval: widget.pollInterval,
+        cancelled: () => _closed,
+      );
+      if (_closed) return;
+      if (user == null) {
+        _showFailure(Exception('Login timeout'));
+        return;
+      }
+      widget.onLoginSuccess(user);
+    } catch (e) {
+      if (_closed) return;
+      _showFailure(e);
+    } finally {
+      _wait = null;
+    }
+  }
+
+  void _showFailure(Object error) {
+    widget.onAuthError?.call(error);
+    if (!mounted) return;
+    setState(() => _error = tran.telegram_login_failed);
+  }
 
   @override
   Widget build(BuildContext context) {
     return DefaultSocialLoginDialog(
-      title: title,
-      logo: logo,
-      buttonText: buttonText,
-      inputDecoration: inputDecoration,
-      cursorColor: cursorColor,
-      onButtonPressed: (phoneNumber) async {
-        // #656/#657: timeout и любые ошибки логина ловим внутри — НЕ пробрасываем
-        // непойманным исключением (иначе uncaught -> краш в GlitchTip). Сообщаем
-        // через onAuthError, если хендлер задан, иначе тихо логируем.
-        try {
-          final localTimeout = timeout ?? const Duration(minutes: 1);
-          final telegramAuth = TelegramAuth(
-            phoneNumber: phoneNumber,
-            botId: botId,
-            botDomain: botDomain,
-            timeout: localTimeout,
-          );
-
-          await telegramAuth.launchTelegram();
-          await telegramAuth.initiateLogin();
-
-          final startTime = DateTime.now();
-          var isLoggedIn = false;
-          TelegramUser? user;
-
-          while (DateTime.now().difference(startTime) < localTimeout) {
-            isLoggedIn = await telegramAuth.checkLoginStatus();
-            if (isLoggedIn) {
-              user = await telegramAuth.getUserData();
-              break;
-            }
-            await Future.delayed(const Duration(seconds: 2));
-          }
-          if (isLoggedIn && user != null) {
-            onLoginSuccess(user);
-          } else {
-            throw Exception('Login timeout');
-          }
-        } catch (e) {
-          if (onAuthError != null) {
-            onAuthError!(e);
-          } else {
-            debugPrint(
-              'TelegramLoginWidget: вход не выполнен (timeout/ошибка): $e',
-            );
-          }
-        }
-      },
-      onAuthError: (error) {
-        if (onAuthError != null) {
-          onAuthError!(error);
-        } else {
-          // #657: не пробрасываем непойманным (иначе краш) — логируем.
-          debugPrint(
-            'TelegramLoginWidget: ошибка авторизации (нет хендлера): $error',
-          );
-        }
-      },
+      title: widget.title,
+      logo: widget.logo,
+      buttonText: widget.buttonText,
+      inputDecoration: widget.inputDecoration,
+      cursorColor: widget.cursorColor,
+      phoneController: _phone,
+      errorText: _error,
+      onButtonPressed: _login,
     );
   }
 }

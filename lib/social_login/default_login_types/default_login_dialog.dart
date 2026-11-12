@@ -19,6 +19,7 @@ class DefaultSocialLoginDialog extends StatelessWidget {
     this.showPhoneInput = true,
     this.inputDecoration,
     this.cursorColor,
+    this.errorText,
   });
 
   final String? title;
@@ -30,6 +31,7 @@ class DefaultSocialLoginDialog extends StatelessWidget {
   final void Function(dynamic error)? onAuthError;
   final InputDecoration? inputDecoration;
   final Color? cursorColor;
+  final String? errorText;
 
   @override
   Widget build(BuildContext context) {
@@ -38,24 +40,39 @@ class DefaultSocialLoginDialog extends StatelessWidget {
       inputDecoration: inputDecoration,
       title: title,
       logo: logo,
-      body: NsgButton(
-        margin: const EdgeInsets.only(top: 4),
-        text: buttonText,
-        onPressed: () async {
-          await nsgFutureProgressAndException(
-            func: () async {
-              try {
-                await onButtonPressed(localPhoneController.text);
-              } catch (e) {
-                if (onAuthError != null) {
-                  onAuthError!(e);
-                } else {
-                  rethrow;
-                }
-              }
+      body: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (errorText != null && errorText!.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Text(
+                errorText!,
+                key: const ValueKey('telegramLogin.error'),
+                style: TextStyle(color: nsgtheme.colorError),
+              ),
+            ),
+          NsgButton(
+            margin: const EdgeInsets.only(top: 4),
+            text: buttonText,
+            onPressed: () async {
+              await nsgFutureProgressAndException(
+                func: () async {
+                  try {
+                    await onButtonPressed(localPhoneController.text);
+                  } catch (e) {
+                    if (onAuthError != null) {
+                      onAuthError!(e);
+                    } else {
+                      rethrow;
+                    }
+                  }
+                },
+              );
             },
-          );
-        },
+          ),
+        ],
       ),
       phoneController: localPhoneController,
     );
@@ -107,7 +124,10 @@ class DefaultSocialLoginDialogBody extends StatelessWidget {
         );
 
     return Container(
-      decoration: BoxDecoration(color: nsgtheme.colorMainBack, borderRadius: BorderRadius.circular(10)),
+      decoration: BoxDecoration(
+        color: nsgtheme.colorMainBack,
+        borderRadius: BorderRadius.circular(10),
+      ),
       padding: const EdgeInsets.all(16),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -118,14 +138,20 @@ class DefaultSocialLoginDialogBody extends StatelessWidget {
               if (logo != null)
                 Padding(
                   padding: const EdgeInsetsGeometry.only(top: 10, bottom: 20),
-                  child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [logo!]),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [logo!],
+                  ),
                 ),
               Row(
                 children: [
                   if (logo == null) Text(title ?? tran.login),
                   const Expanded(child: SizedBox()),
                   InkWell(
-                    child: Icon(Icons.close, color: nsgtheme.colorTertiary.withAlpha(127)),
+                    child: Icon(
+                      Icons.close,
+                      color: nsgtheme.colorTertiary.withAlpha(127),
+                    ),
                     onTap: () => Navigator.of(context).pop(),
                   ),
                 ],
@@ -146,7 +172,9 @@ class DefaultSocialLoginDialogBody extends StatelessWidget {
               inputFormatters: [PhoneInputFormatter()],
               style: TextStyle(color: nsgtheme.colorText),
               textAlign: TextAlign.center,
-              decoration: inputDecorationBase.copyWith(hintText: tran.phone_number_in_international_format),
+              decoration: inputDecorationBase.copyWith(
+                hintText: tran.phone_number_in_international_format,
+              ),
               autofillHints: const [AutofillHints.telephoneNumber],
             ),
           const SizedBox(height: 16),
@@ -158,7 +186,10 @@ class DefaultSocialLoginDialogBody extends StatelessWidget {
 }
 
 class SocialLoginDialog {
-  static FutureOr<T?> show<T>(BuildContext context, {required Widget Function(BuildContext dialogContext) builder}) {
+  static FutureOr<T?> show<T>(
+    BuildContext context, {
+    required Widget Function(BuildContext dialogContext) builder,
+  }) {
     return showDialog<T>(
       context: context,
       builder: (dialogContext) => Dialog(
