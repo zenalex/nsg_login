@@ -162,4 +162,8 @@ class NsgLoginLocalizationsRu extends NsgLoginLocalizations {
 
   @override
   String get forgot_password => 'Забыл пароль';
+
+  @override
+  String get telegram_login_failed =>
+      'Не удалось войти через Telegram. Подтвердите вход в Telegram и попробуйте снова.';
 }

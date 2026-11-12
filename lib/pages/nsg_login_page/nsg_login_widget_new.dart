@@ -27,6 +27,8 @@ import 'package:nsg_login/one_time_code.dart';
 import 'package:nsg_login/pages/nsg_login_page/nsg_login_page_new.dart';
 import 'package:nsg_login/pages/nsg_login_state.dart';
 import 'package:nsg_login/pages/nsg_social_login_widget.dart';
+import 'package:nsg_login/social_login/default_login_types/telegram_default_login.dart';
+import 'package:nsg_login/social_login/default_login_types/telegram_oauth_wait.dart';
 import 'package:nsg_login/social_login/social_login_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -1399,6 +1401,34 @@ class _LoginWidgetNewState extends State<LoginWidgetNew> {
           mainAxisAlignment: MainAxisAlignment.center,
           mainAxisSize: MainAxisSize.min,
           children: widget.widgetParams.socialLoginTypes.map((i) {
+            // #4543: в вебе cookie oauth.telegram.org недоступны, опрос молчит.
+            // Кнопка открывает тот же диалог бота, что подтверждение номера.
+            // Без колбэков #4376 кнопку не показываем.
+            if (i is TelegramDefaultAuth) {
+              final route = routeTelegramLogin(
+                isWeb: kIsWeb,
+                messengerReady:
+                    widget.widgetParams.beginMessengerPhone != null &&
+                    widget.widgetParams.pollMessengerPhone != null,
+              );
+              if (route == TelegramLoginRoute.hidden) {
+                return const SizedBox.shrink();
+              }
+              if (route == TelegramLoginRoute.messengerBot) {
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: i.socialLoginButton(() {
+                      _openMessengerPhoneDialog(
+                        context,
+                        MessengerPhoneIntent.access,
+                      );
+                    }),
+                  ),
+                );
+              }
+            }
             Future<void> onSocialTap() async {
               nsgFutureProgressAndException(
                 func: () async {

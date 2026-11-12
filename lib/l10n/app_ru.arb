@@ -42,5 +42,6 @@
   "enter_confirmation_code_from_message": "Введите код подтверждения из сообщения",
   "password_is_required": "Требуется заполнить пароль",
   "passwords_mistmatch": "Пароли не совпадают",
-  "forgot_password": "Забыл пароль"
+  "forgot_password": "Забыл пароль",
+  "telegram_login_failed": "Не удалось войти через Telegram. Подтвердите вход в Telegram и попробуйте снова."
 }

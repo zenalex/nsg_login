@@ -159,4 +159,8 @@ class NsgLoginLocalizationsEn extends NsgLoginLocalizations {
 
   @override
   String get forgot_password => 'Forgot password';
+
+  @override
+  String get telegram_login_failed =>
+      'Could not sign in with Telegram. Confirm the login in Telegram and try again.';
 }
