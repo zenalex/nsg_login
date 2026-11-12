@@ -1490,6 +1490,7 @@ class _LoginWidgetNewState extends State<LoginWidgetNew> {
     openAgain: widget.widgetParams.textMessengerPhoneOpenAgain,
     chooseOther: widget.widgetParams.textMessengerPhoneChooseOther,
     cancel: widget.widgetParams.textMessengerPhoneCancel,
+    enterCode: widget.widgetParams.textMessengerPhoneEnterCode,
   );
 
   Future<void> _openMessengerPhoneDialog(
@@ -1585,11 +1586,11 @@ class _LoginWidgetNewState extends State<LoginWidgetNew> {
     }
     _telegramRecoveryBusy = true;
     try {
-      final message = await request(phoneNumber, channel);
+      final result = await request(phoneNumber, channel);
       if (!context.mounted) return;
       setState(() {
         _telegramRecovery = true;
-        _telegramRecoveryText = message;
+        _telegramRecoveryText = result.message;
         loginType = NsgLoginType.phone;
         currentState = NsgLoginState.verification;
       });

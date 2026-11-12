@@ -99,9 +99,13 @@ class NsgLoginParams implements NsgLoginParamsInterface {
   final PasswordStrength? Function(String password)? passwordIndicator;
   final String? Function(String? password)? passwordValidator;
 
-  /// Код восстановления в уже открытый чат. null — кнопки не показываем.
+  /// Код восстановления. null — кнопки не показываем.
   /// Ответ один и тот же, есть учётка или нет. channel: telegram или max.
-  final Future<String> Function(String phone, String channel)?
+  /// Ссылка на бота, если она есть, не говорит, нашлась ли учётка.
+  final Future<MessengerPhoneRecoveryResult> Function(
+    String phone,
+    String channel,
+  )?
   requestTelegramRecovery;
   String textTelegramRecovery;
   String textMaxRecovery;
@@ -129,6 +133,7 @@ class NsgLoginParams implements NsgLoginParamsInterface {
   String textPhoneRecovery;
   String textMessengerPhoneSteps;
   String textMessengerPhoneRecoverySteps;
+  String textMessengerPhoneEnterCode;
   String textMessengerPhoneWaiting;
   String textMessengerPhoneOpenAgain;
   String textMessengerPhoneChooseOther;
@@ -213,7 +218,8 @@ class NsgLoginParams implements NsgLoginParamsInterface {
     this.textMessengerPhoneSteps =
         'Откроется бот Futbolista → нажмите «Начать» → бот попросит номер → нажмите «Поделиться» или «Разрешить» → вернитесь в приложение.',
     this.textMessengerPhoneRecoverySteps =
-        'Выберите Telegram или MAX. Если номер привязан к боту Futbolista, код для нового пароля придёт в этот чат. Затем введите код в приложении.',
+        'Откроется бот Futbolista → нажмите «Начать» → бот попросит номер → нажмите «Поделиться» или «Разрешить». Если чат уже привязан, код придёт туда же. Затем введите код в приложении.',
+    this.textMessengerPhoneEnterCode = 'Ввести код',
     this.textMessengerPhoneWaiting = 'Ждём подтверждения в боте.',
     this.textMessengerPhoneOpenAgain = 'Открыть бота ещё раз',
     this.textMessengerPhoneChooseOther = 'Выбрать другой мессенджер',

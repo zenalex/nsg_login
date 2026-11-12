@@ -33,6 +33,15 @@ class MessengerPhonePollResult {
 
 enum MessengerPhoneIntent { access, recovery }
 
+/// Ответ восстановления. Сообщение одно и то же, есть учётка или нет.
+/// [url] — ссылка на бота, если сервер её прислал. Пустая ссылка не ветвит экран.
+class MessengerPhoneRecoveryResult {
+  const MessengerPhoneRecoveryResult(this.message, {this.url});
+
+  final String message;
+  final String? url;
+}
+
 /// Чем закончился диалог. null у showDialog — человек закрыл его сам.
 class MessengerPhoneDialogOutcome {
   const MessengerPhoneDialogOutcome.access(this.phone)

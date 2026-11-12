@@ -150,4 +150,70 @@ void main() {
     expect(find.byKey(const ValueKey('messengerPhone.waiting')), findsNothing);
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets(
+    'восстановление со ссылкой открывает бота и не уходит на код сразу',
+    (tester) async {
+      final opened = <String>[];
+      MessengerPhoneDialogOutcome? outcome;
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Builder(
+              builder: (context) => TextButton(
+                onPressed: () async {
+                  outcome = await showDialog<MessengerPhoneDialogOutcome>(
+                    context: context,
+                    builder: (_) => MessengerPhoneDialog(
+                      intent: MessengerPhoneIntent.recovery,
+                      text: text,
+                      begin: (_, __) async =>
+                          const MessengerPhoneBeginResult(errorCode: 50301),
+                      poll: (_, __) async =>
+                          const MessengerPhonePollResult(errorCode: 50301),
+                      recovery: (_, __) async =>
+                          const MessengerPhoneRecoveryResult(
+                            'Если номер есть, код отправлен.',
+                            url: 'https://t.me/FutbolistaBot?start=abc',
+                          ),
+                      errorText: (code) => 'отказ $code',
+                      phoneValid: (phone) => phone.trim().length >= 9,
+                      openUrl: (url) async {
+                        opened.add(url);
+                      },
+                    ),
+                  );
+                },
+                child: const Text('open'),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byKey(const ValueKey('messengerPhone.phone')),
+        '79990001122',
+      );
+      await tester.tap(find.byKey(const ValueKey('messengerPhone.telegram')));
+      await tester.pumpAndSettle();
+
+      expect(opened, ['https://t.me/FutbolistaBot?start=abc']);
+      expect(
+        find.byKey(const ValueKey('messengerPhone.waiting')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey('messengerPhone.enterCode')),
+        findsOneWidget,
+      );
+      expect(outcome, isNull);
+
+      await tester.tap(find.byKey(const ValueKey('messengerPhone.enterCode')));
+      await tester.pumpAndSettle();
+      expect(outcome?.recoveryMessage, 'Если номер есть, код отправлен.');
+      expect(tester.takeException(), isNull);
+    },
+  );
 }

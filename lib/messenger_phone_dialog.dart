@@ -16,6 +16,7 @@ class MessengerPhoneDialogText {
     required this.openAgain,
     required this.chooseOther,
     required this.cancel,
+    this.enterCode = 'Ввести код',
     this.telegram = 'Telegram',
     this.max = 'MAX',
     this.unavailable =
@@ -32,6 +33,7 @@ class MessengerPhoneDialogText {
   final String openAgain;
   final String chooseOther;
   final String cancel;
+  final String enterCode;
   final String telegram;
   final String max;
   final String unavailable;
@@ -61,7 +63,11 @@ class MessengerPhoneDialog extends StatefulWidget {
     bool Function() cancelled,
   )
   poll;
-  final Future<String> Function(String phone, String channel)? recovery;
+  final Future<MessengerPhoneRecoveryResult> Function(
+    String phone,
+    String channel,
+  )?
+  recovery;
   final String Function(int code) errorText;
   final Future<void> Function(String url)? openUrl;
   final bool Function(String phone)? phoneValid;
@@ -78,6 +84,7 @@ class _MessengerPhoneDialogState extends State<MessengerPhoneDialog> {
   var _beginInFlight = false;
   String? _url;
   String? _error;
+  String? _recoveryMessage;
 
   @override
   void dispose() {
@@ -129,21 +136,49 @@ class _MessengerPhoneDialogState extends State<MessengerPhoneDialog> {
       });
       return;
     }
+    MessengerPhoneRecoveryResult result;
     try {
-      final message = await request(phone, channel);
-      if (_cancelled(generation)) return;
-      if (mounted) {
-        Navigator.of(
-          context,
-        ).pop(MessengerPhoneDialogOutcome.recovery(phone, message));
-      }
+      result = await request(phone, channel);
     } catch (_) {
       if (_cancelled(generation)) return;
       setState(() {
         _beginInFlight = false;
         _error = widget.text.unavailable;
       });
+      return;
     }
+    if (_cancelled(generation)) return;
+    final url = result.url;
+    if (url != null && messengerPhoneUrlAllowed(url)) {
+      setState(() {
+        _beginInFlight = false;
+        _waiting = true;
+        _url = url;
+        _recoveryMessage = result.message;
+        _error = null;
+      });
+      try {
+        await widget.openUrl?.call(url);
+      } catch (_) {
+        if (_cancelled(generation)) return;
+        setState(() => _error = widget.text.unavailable);
+      }
+      return;
+    }
+    if (mounted) {
+      Navigator.of(
+        context,
+      ).pop(MessengerPhoneDialogOutcome.recovery(phone, result.message));
+    }
+  }
+
+  void _enterCode() {
+    final phone = _phone.text.trim();
+    final message = _recoveryMessage;
+    if (message == null) return;
+    Navigator.of(
+      context,
+    ).pop(MessengerPhoneDialogOutcome.recovery(phone, message));
   }
 
   Future<void> _access(String phone, String channel, int generation) async {
@@ -243,6 +278,14 @@ class _MessengerPhoneDialogState extends State<MessengerPhoneDialog> {
                     Text(_error!, key: const ValueKey('messengerPhone.error')),
                   ],
                   const SizedBox(height: 12),
+                  if (widget.intent == MessengerPhoneIntent.recovery)
+                    OutlinedButton(
+                      key: const ValueKey('messengerPhone.enterCode'),
+                      onPressed: _enterCode,
+                      child: Text(text.enterCode),
+                    ),
+                  if (widget.intent == MessengerPhoneIntent.recovery)
+                    const SizedBox(height: 8),
                   OutlinedButton(
                     key: const ValueKey('messengerPhone.openAgain'),
                     onPressed: _url == null
