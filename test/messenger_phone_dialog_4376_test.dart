@@ -6,6 +6,20 @@ import 'package:nsg_login/messenger_phone_dialog.dart';
 import 'package:nsg_login/messenger_phone_flow.dart';
 
 void main() {
+  test('пароль обязателен только у новой учётки', () {
+    expect(
+      messengerPasswordStep('required'),
+      MessengerPasswordStep.requirePassword,
+    );
+    expect(
+      messengerPasswordStep('missing'),
+      MessengerPasswordStep.offerPassword,
+    );
+    expect(messengerPasswordStep('set'), MessengerPasswordStep.enterApp);
+    expect(messengerPasswordStep(''), MessengerPasswordStep.enterApp);
+    expect(messengerPasswordStep(null), MessengerPasswordStep.enterApp);
+  });
+
   const text = MessengerPhoneDialogText(
     registerTitle: 'Регистрация по телефону',
     recoveryTitle: 'Восстановление по телефону',

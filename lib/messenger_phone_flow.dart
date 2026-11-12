@@ -22,6 +22,7 @@ class MessengerPhonePollResult {
     this.confirmed = false,
     this.errorCode = 0,
     this.token = '',
+    this.passwordState = '',
   });
 
   final bool cancelled;
@@ -29,6 +30,24 @@ class MessengerPhonePollResult {
   final bool confirmed;
   final int errorCode;
   final String token;
+
+  /// required — новая учётка, пароль обязателен.
+  /// missing — пароль пуст, напоминание можно отложить.
+  /// Пусто и set — сразу в приложение. В анонимный ответ не приходит.
+  final String passwordState;
+}
+
+enum MessengerPasswordStep { enterApp, requirePassword, offerPassword }
+
+MessengerPasswordStep messengerPasswordStep(String? state) {
+  switch (state) {
+    case 'required':
+      return MessengerPasswordStep.requirePassword;
+    case 'missing':
+      return MessengerPasswordStep.offerPassword;
+    default:
+      return MessengerPasswordStep.enterApp;
+  }
 }
 
 enum MessengerPhoneIntent { access, recovery }
@@ -44,16 +63,18 @@ class MessengerPhoneRecoveryResult {
 
 /// Чем закончился диалог. null у showDialog — человек закрыл его сам.
 class MessengerPhoneDialogOutcome {
-  const MessengerPhoneDialogOutcome.access(this.phone)
+  const MessengerPhoneDialogOutcome.access(this.phone, {this.passwordState})
     : accessConfirmed = true,
       recoveryMessage = null;
 
   const MessengerPhoneDialogOutcome.recovery(this.phone, this.recoveryMessage)
-    : accessConfirmed = false;
+    : accessConfirmed = false,
+      passwordState = null;
 
   final bool accessConfirmed;
   final String phone;
   final String? recoveryMessage;
+  final String? passwordState;
 }
 
 bool messengerPhoneUrlAllowed(String url) {

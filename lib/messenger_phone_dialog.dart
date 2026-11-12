@@ -218,7 +218,12 @@ class _MessengerPhoneDialogState extends State<MessengerPhoneDialog> {
     if (_cancelled(generation) || poll.cancelled) return;
     if (poll.confirmed) {
       if (mounted) {
-        Navigator.of(context).pop(MessengerPhoneDialogOutcome.access(phone));
+        Navigator.of(context).pop(
+          MessengerPhoneDialogOutcome.access(
+            phone,
+            passwordState: poll.passwordState,
+          ),
+        );
       }
       return;
     }

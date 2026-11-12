@@ -129,11 +129,20 @@ class NsgLoginParams implements NsgLoginParamsInterface {
   )?
   pollMessengerPhone;
   final Future<void> Function(String url)? openMessengerUrl;
+
+  /// Первая установка пароля уже вошедшего пользователя. 0 — записан.
+  /// null — шаг пароля показать нечем.
+  final Future<int> Function(String password)? setMessengerPassword;
   String textPhoneRegistration;
   String textPhoneRecovery;
   String textMessengerPhoneSteps;
   String textMessengerPhoneRecoverySteps;
   String textMessengerPhoneEnterCode;
+  String textMessengerPhoneCreatePassword;
+  String textMessengerPhonePasswordHint;
+  String textMessengerPhoneSetPassword;
+  String textMessengerPhonePasswordLater;
+  String textMessengerPhonePasswordFailed;
   String textMessengerPhoneWaiting;
   String textMessengerPhoneOpenAgain;
   String textMessengerPhoneChooseOther;
@@ -213,6 +222,7 @@ class NsgLoginParams implements NsgLoginParamsInterface {
     this.beginMessengerPhone,
     this.pollMessengerPhone,
     this.openMessengerUrl,
+    this.setMessengerPassword,
     this.textPhoneRegistration = 'Регистрация по телефону',
     this.textPhoneRecovery = 'Восстановление по телефону',
     this.textMessengerPhoneSteps =
@@ -220,6 +230,13 @@ class NsgLoginParams implements NsgLoginParamsInterface {
     this.textMessengerPhoneRecoverySteps =
         'Откроется бот Futbolista → нажмите «Начать» → бот попросит номер → нажмите «Поделиться» или «Разрешить». Если чат уже привязан, код придёт туда же. Затем введите код в приложении.',
     this.textMessengerPhoneEnterCode = 'Ввести код',
+    this.textMessengerPhoneCreatePassword = 'Придумайте пароль',
+    this.textMessengerPhonePasswordHint =
+        'Пароль нужен, чтобы входить по телефону без мессенджера.',
+    this.textMessengerPhoneSetPassword = 'Установить пароль',
+    this.textMessengerPhonePasswordLater = 'Позже',
+    this.textMessengerPhonePasswordFailed =
+        'Не удалось сохранить пароль. Повторите попытку.',
     this.textMessengerPhoneWaiting = 'Ждём подтверждения в боте.',
     this.textMessengerPhoneOpenAgain = 'Открыть бота ещё раз',
     this.textMessengerPhoneChooseOther = 'Выбрать другой мессенджер',
