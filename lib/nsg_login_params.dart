@@ -5,6 +5,7 @@ import 'package:nsg_data/authorize/nsg_login_model.dart';
 import 'package:nsg_data/authorize/nsg_login_params.dart';
 import 'package:nsg_data/password/nsg_login_password_strength.dart';
 import 'package:nsg_login/helpers.dart';
+import 'package:nsg_login/messenger_phone_flow.dart';
 import 'package:nsg_login/social_login/social_login_types.dart';
 
 class NsgLoginParams implements NsgLoginParamsInterface {
@@ -98,6 +99,55 @@ class NsgLoginParams implements NsgLoginParamsInterface {
   final PasswordStrength? Function(String password)? passwordIndicator;
   final String? Function(String? password)? passwordValidator;
 
+  /// Код восстановления. null — кнопки не показываем.
+  /// Ответ один и тот же, есть учётка или нет. channel: telegram или max.
+  /// Ссылка на бота, если она есть, не говорит, нашлась ли учётка.
+  final Future<MessengerPhoneRecoveryResult> Function(
+    String phone,
+    String channel,
+  )?
+  requestTelegramRecovery;
+  String textTelegramRecovery;
+  String textMaxRecovery;
+
+  /// Доступ по своему контакту. 0 — токен уже записан в провайдер.
+  /// SMS этим колбэком не включается.
+  final Future<int> Function(String phone, String channel)?
+  requestMessengerPhoneAccess;
+  String textMessengerPhoneAccess;
+
+  /// Begin отдельно от Poll: диалог показывает отказ и состояние ожидания.
+  /// null — прежние кнопки Telegram/MAX на самом экране.
+  final Future<MessengerPhoneBeginResult> Function(
+    String phone,
+    String channel,
+  )?
+  beginMessengerPhone;
+  final Future<MessengerPhonePollResult> Function(
+    String payload,
+    bool Function() cancelled,
+  )?
+  pollMessengerPhone;
+  final Future<void> Function(String url)? openMessengerUrl;
+
+  /// Первая установка пароля уже вошедшего пользователя. 0 — записан.
+  /// null — шаг пароля показать нечем.
+  final Future<int> Function(String password)? setMessengerPassword;
+  String textPhoneRegistration;
+  String textPhoneRecovery;
+  String textMessengerPhoneSteps;
+  String textMessengerPhoneRecoverySteps;
+  String textMessengerPhoneEnterCode;
+  String textMessengerPhoneCreatePassword;
+  String textMessengerPhonePasswordHint;
+  String textMessengerPhoneSetPassword;
+  String textMessengerPhonePasswordLater;
+  String textMessengerPhonePasswordFailed;
+  String textMessengerPhoneWaiting;
+  String textMessengerPhoneOpenAgain;
+  String textMessengerPhoneChooseOther;
+  String textMessengerPhoneCancel;
+
   bool? appbar;
   bool? headerMessageVisible;
 
@@ -163,6 +213,34 @@ class NsgLoginParams implements NsgLoginParamsInterface {
     this.eventLoginWidgweClosed,
     this.passwordIndicator,
     this.passwordValidator,
+    this.requestTelegramRecovery,
+    this.textTelegramRecovery = 'Код в Telegram',
+    this.textMaxRecovery = 'Код в MAX',
+    this.requestMessengerPhoneAccess,
+    this.textMessengerPhoneAccess =
+        'Подтвердите номер через Telegram или MAX. Если номер уже есть у учётки, откроется ваш аккаунт.',
+    this.beginMessengerPhone,
+    this.pollMessengerPhone,
+    this.openMessengerUrl,
+    this.setMessengerPassword,
+    this.textPhoneRegistration = 'Регистрация по телефону',
+    this.textPhoneRecovery = 'Восстановление по телефону',
+    this.textMessengerPhoneSteps =
+        'Откроется бот Futbolista → нажмите «Начать» → бот попросит номер → нажмите «Поделиться» или «Разрешить» → вернитесь в приложение.',
+    this.textMessengerPhoneRecoverySteps =
+        'Откроется бот Futbolista → нажмите «Начать» → бот попросит номер → нажмите «Поделиться» или «Разрешить». Если чат уже привязан, код придёт туда же. Затем введите код в приложении.',
+    this.textMessengerPhoneEnterCode = 'Ввести код',
+    this.textMessengerPhoneCreatePassword = 'Придумайте пароль',
+    this.textMessengerPhonePasswordHint =
+        'Пароль нужен, чтобы входить по телефону без мессенджера.',
+    this.textMessengerPhoneSetPassword = 'Установить пароль',
+    this.textMessengerPhonePasswordLater = 'Позже',
+    this.textMessengerPhonePasswordFailed =
+        'Не удалось сохранить пароль. Повторите попытку.',
+    this.textMessengerPhoneWaiting = 'Ждём подтверждения в боте.',
+    this.textMessengerPhoneOpenAgain = 'Открыть бота ещё раз',
+    this.textMessengerPhoneChooseOther = 'Выбрать другой мессенджер',
+    this.textMessengerPhoneCancel = 'Отмена',
     this.socialLoginTypes = const [],
   }) {
     headerMessageStyle ??= TextStyle(

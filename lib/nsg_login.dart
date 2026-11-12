@@ -5,3 +5,5 @@ export 'nsg_login_provider.dart';
 export 'nsg_login_params.dart';
 export 'password_strength_ui.dart';
 export 'one_time_code.dart';
+export 'messenger_phone_flow.dart';
+export 'messenger_phone_dialog.dart';

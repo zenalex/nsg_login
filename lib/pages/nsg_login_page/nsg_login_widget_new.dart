@@ -19,6 +19,8 @@ import 'package:nsg_data/password/nsg_login_password_strength.dart';
 import 'package:nsg_login/social_login/social_login_exception.dart';
 import 'package:nsg_login/password_strength_ui.dart';
 import 'package:nsg_login/helpers.dart';
+import 'package:nsg_login/messenger_phone_dialog.dart';
+import 'package:nsg_login/messenger_phone_flow.dart';
 import 'package:nsg_login/nsg_login_params.dart';
 import 'package:nsg_login/phone_registration_gate.dart';
 import 'package:nsg_login/one_time_code.dart';
@@ -74,6 +76,10 @@ class _LoginWidgetNewState extends State<LoginWidgetNew> {
   bool _obscureLoginPassword = true;
   bool _obscureNewPassword1 = true;
   bool _obscureNewPassword2 = true;
+  bool _telegramRecovery = false;
+  bool _passwordCanSkip = false;
+  bool _telegramRecoveryBusy = false;
+  String _telegramRecoveryText = '';
 
   static int stagePreLogin = 1;
 
@@ -231,7 +237,8 @@ class _LoginWidgetNewState extends State<LoginWidgetNew> {
               ),
             ),
           if (widget.widgetParams.usePasswordLogin &&
-              currentState != NsgLoginState.verification)
+              currentState != NsgLoginState.verification &&
+              currentState != NsgLoginState.setPassword)
             _buildTopTabs(context),
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
@@ -245,6 +252,14 @@ class _LoginWidgetNewState extends State<LoginWidgetNew> {
                 // Код и новый пароль — одна форма автозаполнения (#3088):
                 // система подставляет код из письма/SMS и предлагает сохранить
                 // новый пароль, когда группа уходит с экрана.
+                if (currentState == NsgLoginState.setPassword)
+                  AutofillGroup(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: _setPasswordStateWidget(context),
+                    ),
+                  ),
                 if (currentState == NsgLoginState.verification)
                   AutofillGroup(
                     child: Column(
@@ -308,7 +323,8 @@ class _LoginWidgetNewState extends State<LoginWidgetNew> {
                       currentState = NsgLoginState.registration;
                       loginType = registrationIdentityType(
                         current: loginType,
-                        usePhoneRegistration: widget.widgetParams.usePhoneRegistration,
+                        usePhoneRegistration:
+                            widget.widgetParams.usePhoneRegistration,
                         useEmailLogin: widget.widgetParams.useEmailLogin,
                       );
                     });
@@ -383,10 +399,12 @@ class _LoginWidgetNewState extends State<LoginWidgetNew> {
   }
 
   Widget _primaryButton({
+    Key? key,
     required VoidCallback onPressed,
     required String text,
   }) {
     return Material(
+      key: key,
       color: nsgtheme.colorPrimary,
       borderRadius: BorderRadius.circular(12),
       child: InkWell(
@@ -489,6 +507,7 @@ class _LoginWidgetNewState extends State<LoginWidgetNew> {
             currentState == NsgLoginState.login)) {
       if (currentState == NsgLoginState.registration ||
           !widget.widgetParams.usePasswordLogin) {
+        _telegramRecovery = false;
         currentState = NsgLoginState.verification;
       } else {
         isLoginSuccessfull = true;
@@ -815,7 +834,8 @@ class _LoginWidgetNewState extends State<LoginWidgetNew> {
                       currentState = NsgLoginState.registration;
                       loginType = registrationIdentityType(
                         current: loginType,
-                        usePhoneRegistration: widget.widgetParams.usePhoneRegistration,
+                        usePhoneRegistration:
+                            widget.widgetParams.usePhoneRegistration,
                         useEmailLogin: widget.widgetParams.useEmailLogin,
                       );
                     });
@@ -844,6 +864,46 @@ class _LoginWidgetNewState extends State<LoginWidgetNew> {
         )
       else
         const SizedBox(height: 10),
+      if (widget.widgetParams.beginMessengerPhone != null &&
+          widget.widgetParams.requestTelegramRecovery != null &&
+          widget.widgetParams.usePhoneLogin &&
+          loginType == NsgLoginType.phone)
+        Align(
+          alignment: Alignment.centerRight,
+          child: Padding(
+            padding: const EdgeInsets.only(top: 8, bottom: 4),
+            child: _link(widget.widgetParams.textPhoneRecovery, () {
+              unawaited(
+                _openMessengerPhoneDialog(
+                  context,
+                  MessengerPhoneIntent.recovery,
+                ),
+              );
+            }),
+          ),
+        )
+      else if (widget.widgetParams.requestTelegramRecovery != null &&
+          widget.widgetParams.usePhoneLogin &&
+          loginType == NsgLoginType.phone)
+        Align(
+          alignment: Alignment.centerRight,
+          child: Padding(
+            padding: const EdgeInsets.only(top: 8, bottom: 4),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                _link(widget.widgetParams.textTelegramRecovery, () {
+                  if (_telegramRecoveryBusy) return;
+                  unawaited(_requestTelegramRecovery(context, 'telegram'));
+                }),
+                _link(widget.widgetParams.textMaxRecovery, () {
+                  if (_telegramRecoveryBusy) return;
+                  unawaited(_requestTelegramRecovery(context, 'max'));
+                }),
+              ],
+            ),
+          ),
+        ),
       if (widget.widgetParams.useCaptcha)
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -930,7 +990,78 @@ class _LoginWidgetNewState extends State<LoginWidgetNew> {
       usePhoneLogin: widget.widgetParams.usePhoneLogin,
       usePhoneRegistration: widget.widgetParams.usePhoneRegistration,
     );
+    final messengerDialog = widget.widgetParams.beginMessengerPhone != null;
     return [
+      if (messengerDialog) ...[
+        Padding(
+          padding: const EdgeInsets.only(bottom: 10),
+          child: Text(
+            widget.widgetParams.textMessengerPhoneAccess,
+            style: TextStyle(
+              color: nsgtheme.colorText,
+              fontSize: nsgtheme.sizeM,
+              height: 1.35,
+            ),
+          ),
+        ),
+        _primaryButton(
+          key: const ValueKey('nsgLogin.registration.phoneRegister'),
+          text: widget.widgetParams.textPhoneRegistration,
+          onPressed: () => unawaited(
+            _openMessengerPhoneDialog(context, MessengerPhoneIntent.access),
+          ),
+        ),
+        if (widget.widgetParams.requestTelegramRecovery != null) ...[
+          const SizedBox(height: 8),
+          _primaryButton(
+            key: const ValueKey('nsgLogin.registration.phoneRecover'),
+            text: widget.widgetParams.textPhoneRecovery,
+            onPressed: () => unawaited(
+              _openMessengerPhoneDialog(context, MessengerPhoneIntent.recovery),
+            ),
+          ),
+        ],
+        const SizedBox(height: 16),
+      ] else if (widget.widgetParams.requestMessengerPhoneAccess != null) ...[
+        Padding(
+          padding: const EdgeInsets.only(bottom: 10),
+          child: Text(
+            widget.widgetParams.textMessengerPhoneAccess,
+            style: TextStyle(
+              color: nsgtheme.colorText,
+              fontSize: nsgtheme.sizeM,
+              height: 1.35,
+            ),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.only(bottom: 10),
+          child: TextFormField(
+            key: const ValueKey('nsgLogin.registration.messengerPhone'),
+            cursorColor: Theme.of(context).primaryColor,
+            keyboardType: TextInputType.phone,
+            inputFormatters: [phoneFormatter],
+            style: _fieldTextStyle,
+            textAlign: TextAlign.start,
+            decoration: decor.copyWith(
+              hintText: widget.widgetParams.textEnterPhone,
+            ),
+            initialValue: phoneNumber,
+            onChanged: (value) => phoneNumber = value,
+            validator: (value) => null,
+          ),
+        ),
+        _primaryButton(
+          text: 'Telegram',
+          onPressed: () => unawaited(_messengerAccess(context, 'telegram')),
+        ),
+        const SizedBox(height: 8),
+        _primaryButton(
+          text: 'MAX',
+          onPressed: () => unawaited(_messengerAccess(context, 'max')),
+        ),
+        const SizedBox(height: 16),
+      ],
       if (showPhoneRegistration && widget.widgetParams.useEmailLogin)
         Padding(
           padding: const EdgeInsets.only(bottom: 12),
@@ -1040,7 +1171,9 @@ class _LoginWidgetNewState extends State<LoginWidgetNew> {
       Padding(
         padding: const EdgeInsets.only(bottom: 12),
         child: Text(
-          loginType == NsgLoginType.email
+          _telegramRecovery
+              ? _telegramRecoveryText
+              : loginType == NsgLoginType.email
               ? tran.we_sent_you_the_code_in_a_message_by_email_phone(email)
               : tran.we_sent_you_a_code_via_sms_to_your_phone_number(
                   phoneNumber,
@@ -1147,6 +1280,7 @@ class _LoginWidgetNewState extends State<LoginWidgetNew> {
         child: InkWell(
           onTap: () {
             currentState = NsgLoginState.login;
+            _telegramRecovery = false;
             setState(() {});
           },
           child: Padding(
@@ -1325,10 +1459,7 @@ class _LoginWidgetNewState extends State<LoginWidgetNew> {
                     // в fatal и заваливал трекер (#1594).
                     debugPrint('Social login refused: $e');
                     if (context.mounted) {
-                      nsgSnackbar(
-                        text: e.message,
-                        type: NsgSnarkBarType.error,
-                      );
+                      nsgSnackbar(text: e.message, type: NsgSnarkBarType.error);
                     }
                     if (!e.isExpected) rethrow;
                   } catch (e) {
@@ -1356,6 +1487,265 @@ class _LoginWidgetNewState extends State<LoginWidgetNew> {
         ),
       ),
     );
+  }
+
+  MessengerPhoneDialogText get _messengerDialogText => MessengerPhoneDialogText(
+    registerTitle: widget.widgetParams.textPhoneRegistration,
+    recoveryTitle: widget.widgetParams.textPhoneRecovery,
+    steps: widget.widgetParams.textMessengerPhoneSteps,
+    recoverySteps: widget.widgetParams.textMessengerPhoneRecoverySteps,
+    phoneHint: widget.widgetParams.textEnterPhone,
+    invalidPhone: widget.widgetParams.textEnterCorrectPhone,
+    waiting: widget.widgetParams.textMessengerPhoneWaiting,
+    openAgain: widget.widgetParams.textMessengerPhoneOpenAgain,
+    chooseOther: widget.widgetParams.textMessengerPhoneChooseOther,
+    cancel: widget.widgetParams.textMessengerPhoneCancel,
+    enterCode: widget.widgetParams.textMessengerPhoneEnterCode,
+  );
+
+  Future<void> _openMessengerPhoneDialog(
+    BuildContext context,
+    MessengerPhoneIntent intent,
+  ) async {
+    final begin = widget.widgetParams.beginMessengerPhone;
+    final poll = widget.widgetParams.pollMessengerPhone;
+    if (begin == null || poll == null) return;
+    final outcome = await showDialog<MessengerPhoneDialogOutcome>(
+      context: context,
+      builder: (_) => MessengerPhoneDialog(
+        intent: intent,
+        text: _messengerDialogText,
+        begin: begin,
+        poll: poll,
+        recovery: widget.widgetParams.requestTelegramRecovery,
+        openUrl: widget.widgetParams.openMessengerUrl,
+        errorText: widget.widgetParams.errorMessage,
+      ),
+    );
+    if (!context.mounted || outcome == null) return;
+    phoneNumber = outcome.phone;
+    if (outcome.accessConfirmed) {
+      final step = messengerPasswordStep(outcome.passwordState);
+      if (step != MessengerPasswordStep.enterApp) {
+        setState(() {
+          currentState = NsgLoginState.setPassword;
+          _passwordCanSkip = step == MessengerPasswordStep.offerPassword;
+          newPassword1 = '';
+          newPassword2 = '';
+        });
+        return;
+      }
+      _enterApp();
+      return;
+    }
+    final message = outcome.recoveryMessage;
+    if (message == null) return;
+    setState(() {
+      _telegramRecovery = true;
+      _telegramRecoveryText = message;
+      loginType = NsgLoginType.phone;
+      currentState = NsgLoginState.verification;
+    });
+  }
+
+  Future<void> _messengerAccess(BuildContext context, String channel) async {
+    final request = widget.widgetParams.requestMessengerPhoneAccess;
+    if (request == null || _telegramRecoveryBusy) return;
+    if (!isPhoneValid(phoneNumber) || phoneNumber.length < 9) {
+      widget.widgetParams.showError(
+        context,
+        widget.widgetParams.textEnterCorrectPhone,
+      );
+      return;
+    }
+    _telegramRecoveryBusy = true;
+    try {
+      final code = await request(phoneNumber, channel);
+      if (!context.mounted || code == -1) return;
+      if (code == 0) {
+        widget.widgetParams.eventLoginWidgweClosed?.call(true);
+        if (widget.widgetParams.onLogin != null) {
+          widget.widgetParams.onLogin!();
+        } else {
+          NsgNavigator.instance.offAndToPage(widget.widgetParams.mainPage);
+        }
+        return;
+      }
+      widget.widgetParams.showError(
+        context,
+        widget.widgetParams.errorMessage(code),
+      );
+    } catch (_) {
+      if (!context.mounted) return;
+      widget.widgetParams.showError(
+        context,
+        widget.widgetParams.textCheckInternet,
+      );
+    } finally {
+      _telegramRecoveryBusy = false;
+    }
+  }
+
+  Future<void> _requestTelegramRecovery(
+    BuildContext context,
+    String channel,
+  ) async {
+    final request = widget.widgetParams.requestTelegramRecovery;
+    if (request == null || _telegramRecoveryBusy) return;
+    if (!isPhoneValid(phoneNumber) || phoneNumber.length < 9) {
+      widget.widgetParams.showError(
+        context,
+        widget.widgetParams.textEnterCorrectPhone,
+      );
+      return;
+    }
+    _telegramRecoveryBusy = true;
+    try {
+      final result = await request(phoneNumber, channel);
+      if (!context.mounted) return;
+      setState(() {
+        _telegramRecovery = true;
+        _telegramRecoveryText = result.message;
+        loginType = NsgLoginType.phone;
+        currentState = NsgLoginState.verification;
+      });
+    } catch (_) {
+      if (!context.mounted) return;
+      widget.widgetParams.showError(
+        context,
+        widget.widgetParams.textCheckInternet,
+      );
+    } finally {
+      _telegramRecoveryBusy = false;
+    }
+  }
+
+  void _enterApp() {
+    widget.widgetParams.eventLoginWidgweClosed?.call(true);
+    if (widget.widgetParams.onLogin != null) {
+      widget.widgetParams.onLogin!();
+    } else {
+      NsgNavigator.instance.offAndToPage(widget.widgetParams.mainPage);
+    }
+  }
+
+  List<Widget> _setPasswordStateWidget(BuildContext context) {
+    final text = widget.widgetParams;
+    if (passwordListener == null && text.passwordIndicator != null) {
+      passwordListener = ValueNotifier(null);
+    }
+    return [
+      Padding(
+        padding: const EdgeInsets.only(bottom: 10),
+        child: Text(
+          _passwordCanSkip
+              ? text.textMessengerPhoneSetPassword
+              : text.textMessengerPhoneCreatePassword,
+          style: text.headerMessageStyle,
+          textAlign: TextAlign.start,
+        ),
+      ),
+      Padding(
+        padding: const EdgeInsets.only(bottom: 12),
+        child: Text(text.textMessengerPhonePasswordHint),
+      ),
+      _labeledField(
+        label: text.textEnterNewPassword,
+        field: TextFormField(
+          key: const ValueKey('nsgLogin.setPassword.newPassword'),
+          autofillHints: nsgNewPasswordAutofillHints,
+          obscureText: _obscureNewPassword1,
+          cursorColor: Theme.of(context).primaryColor,
+          keyboardType: TextInputType.visiblePassword,
+          style: _fieldTextStyle,
+          textAlign: TextAlign.start,
+          decoration: decor.copyWith(hintText: text.textEnterNewPassword),
+          initialValue: newPassword1,
+          onChanged: (value) {
+            if (text.passwordIndicator != null) {
+              passwordListener!.value = text.passwordIndicator!(value);
+            }
+            newPassword1 = value;
+          },
+          validator: (value) {
+            if (value == null || value.trim().isEmpty) {
+              return text.textEnterNewPassword;
+            }
+            return text.passwordValidator?.call(value);
+          },
+        ),
+      ),
+      const Padding(padding: EdgeInsets.only(bottom: 10)),
+      _labeledField(
+        label: null,
+        field: TextFormField(
+          key: const ValueKey('nsgLogin.setPassword.newPasswordRepeat'),
+          autofillHints: nsgNewPasswordAutofillHints,
+          obscureText: _obscureNewPassword2,
+          cursorColor: Theme.of(context).primaryColor,
+          keyboardType: TextInputType.visiblePassword,
+          style: _fieldTextStyle,
+          textAlign: TextAlign.start,
+          decoration: decor.copyWith(hintText: text.textEnterPasswordAgain),
+          initialValue: newPassword2,
+          onChanged: (value) => newPassword2 = value,
+          validator: (value) =>
+              value == newPassword1 ? null : tran.passwords_mistmatch,
+        ),
+      ),
+      if (text.usePasswordLogin && text.passwordIndicator != null)
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 15),
+          child: _getIndicator(
+            listener: passwordListener!,
+            colors: passwordStrengthColors,
+            values: PasswordStrength.values,
+            messages: passwordStrengthMessages,
+            defaultColor: Colors.blueGrey,
+            defaultMessage: tran.password_is_empty,
+          ),
+        ),
+      if (_passwordCanSkip)
+        Padding(
+          padding: const EdgeInsets.only(top: 8),
+          child: TextButton(
+            key: const ValueKey('nsgLogin.setPassword.later'),
+            onPressed: _enterApp,
+            child: Text(text.textMessengerPhonePasswordLater),
+          ),
+        ),
+      _primaryButton(text: text.textConfirm, onPressed: _saveMessengerPassword),
+    ];
+  }
+
+  Future<void> _saveMessengerPassword() async {
+    if (!_formKey.currentState!.validate()) return;
+    final set = widget.widgetParams.setMessengerPassword;
+    if (set == null) {
+      widget.widgetParams.showError(
+        context,
+        widget.widgetParams.textMessengerPhonePasswordFailed,
+      );
+      return;
+    }
+    try {
+      final code = await set(newPassword1);
+      if (!mounted) return;
+      if (code == 0) {
+        _enterApp();
+        return;
+      }
+      widget.widgetParams.showError(
+        context,
+        widget.widgetParams.textMessengerPhonePasswordFailed,
+      );
+    } catch (_) {
+      if (!mounted) return;
+      widget.widgetParams.showError(
+        context,
+        widget.widgetParams.textCheckInternet,
+      );
+    }
   }
 
   void setNewPassword(
