@@ -92,6 +92,13 @@ class _LoginWidgetNewState extends State<LoginWidgetNew> {
 
   ValueNotifier<PasswordStrength?>? passwordListener;
 
+  /// Индикатор силы пароля создаётся при первом обращении (#4591).
+  /// Экран подтверждения открывается и без регистрации: восстановление через
+  /// Telegram/MAX ведёт со входа сразу на код и новый пароль. Раньше там стоял
+  /// `_passwordStrength`, и каждая перерисовка падала с Null check.
+  ValueNotifier<PasswordStrength?> get _passwordStrength =>
+      passwordListener ??= ValueNotifier(null);
+
   @override
   void initState() {
     super.initState();
@@ -1220,7 +1227,7 @@ class _LoginWidgetNewState extends State<LoginWidgetNew> {
             initialValue: newPassword1,
             onChanged: (value) {
               if (widget.widgetParams.passwordIndicator != null) {
-                passwordListener!.value =
+                _passwordStrength.value =
                     widget.widgetParams.passwordIndicator!(value);
               }
               newPassword1 = value;
@@ -1271,7 +1278,7 @@ class _LoginWidgetNewState extends State<LoginWidgetNew> {
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 15),
           child: _getIndicator(
-            listener: passwordListener!,
+            listener: _passwordStrength,
             colors: passwordStrengthColors,
             values: PasswordStrength.values,
             messages: passwordStrengthMessages,
@@ -1718,7 +1725,7 @@ class _LoginWidgetNewState extends State<LoginWidgetNew> {
           initialValue: newPassword1,
           onChanged: (value) {
             if (text.passwordIndicator != null) {
-              passwordListener!.value = text.passwordIndicator!(value);
+              _passwordStrength.value = text.passwordIndicator!(value);
             }
             newPassword1 = value;
           },
@@ -1752,7 +1759,7 @@ class _LoginWidgetNewState extends State<LoginWidgetNew> {
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 15),
           child: _getIndicator(
-            listener: passwordListener!,
+            listener: _passwordStrength,
             colors: passwordStrengthColors,
             values: PasswordStrength.values,
             messages: passwordStrengthMessages,
