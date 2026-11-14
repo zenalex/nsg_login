@@ -1390,6 +1390,9 @@ class LoginWidgetState extends State<LoginWidget> {
       }
       return;
     }
+    if (_codeRepeatLeft != null) {
+      setState(() => _codeRepeatLeft = null);
+    }
     //Если код ответа отличен от нуля - это ошибка, расшифровываем её и показываем пользователю
     //TODO_FUTURE: проверить остались ли еще попытки ввода кода подтверждения или требуется новый.
     var errorMessage = widget.widgetParams.errorMessageByStatusCode!(

@@ -1906,6 +1906,9 @@ class _LoginWidgetNewState extends State<LoginWidgetNew> {
       }
       return;
     }
+    if (_codeRepeatLeft != null) {
+      setState(() => _codeRepeatLeft = null);
+    }
     final errorMessage = widget.widgetParams.errorMessageByStatusCode!(
       answerCode.errorCode,
     );
