@@ -13,6 +13,7 @@ import 'package:nsg_data/authorize/nsg_login_response.dart';
 import 'package:nsg_data/authorize/nsg_social_login_response.dart';
 import 'package:nsg_data/nsg_data.dart';
 import 'package:nsg_data/password/nsg_login_password_strength.dart';
+import 'package:nsg_login/code_repeat_clock.dart';
 import 'package:nsg_login/password_strength_ui.dart';
 import 'package:nsg_login/helpers.dart';
 import 'package:nsg_login/main_login/main_login_type.dart';
@@ -150,6 +151,7 @@ class LoginWidgetState extends State<LoginWidget> {
   int secondsLeft = -1;
   //таймер, запускаемый по факту получения капчи. С автообновлением капчи через 2 минуты
   Timer? updateTimer;
+  int? _codeRepeatLeft;
   NsgLoginState currentState = NsgLoginState.login;
   bool _loginResultHandled = false;
   bool _closeHandled = false;
@@ -451,6 +453,23 @@ class LoginWidgetState extends State<LoginWidget> {
     return image;
   }
 
+  void _startCodeRepeatCountdown(double seconds) {
+    final whole = seconds.isFinite ? seconds.floor() : 0;
+    _codeRepeatLeft = whole < 0 ? 0 : whole;
+    if (_codeRepeatLeft == 0) return;
+    updateTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+      setState(() {
+        final next = (_codeRepeatLeft ?? 1) - 1;
+        _codeRepeatLeft = next < 0 ? 0 : next;
+        if (_codeRepeatLeft == 0) timer.cancel();
+      });
+    });
+  }
+
   void checkRequestSMSanswer(
     BuildContext? context,
     NsgLoginResponse answerCode,
@@ -458,6 +477,7 @@ class LoginWidgetState extends State<LoginWidget> {
     if (updateTimer != null) {
       updateTimer!.cancel();
     }
+    _codeRepeatLeft = null;
 
     // Legacy servers reuse 40300 for the resend cooldown. It is not a
     // failed verification when requesting a code with a remaining delay.
@@ -474,6 +494,9 @@ class LoginWidgetState extends State<LoginWidget> {
       if (currentState == NsgLoginState.registration ||
           !widget.widgetParams.usePasswordLogin) {
         currentState = NsgLoginState.verification;
+        if (codeAlreadySent) {
+          _startCodeRepeatCountdown(answerCode.secondsBeforeRepeat);
+        }
       } else {
         isLoginSuccessfull = true;
       }
@@ -1015,6 +1038,24 @@ class LoginWidgetState extends State<LoginWidget> {
           textAlign: TextAlign.center,
         ),
       ),
+      if (_codeRepeatLeft != null) ...[
+        Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: Text(
+            tran.code_already_sent_retry_in(
+              formatCodeRepeatClock(_codeRepeatLeft!),
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.only(bottom: 10),
+          child: Text(
+            tran.code_already_sent_try_other_channel,
+            textAlign: TextAlign.center,
+          ),
+        ),
+      ],
       _getInput(
         hintText: widget.widgetParams.textEnterCode,
         initialValue: securityCode,

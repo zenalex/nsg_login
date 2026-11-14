@@ -43,5 +43,14 @@
   "password_is_required": "Password is required",
   "passwords_mistmatch": "Passwords mistmatch",
   "forgot_password": "Forgot password",
-  "telegram_login_failed": "Could not sign in with Telegram. Confirm the login in Telegram and try again."
+  "telegram_login_failed": "Could not sign in with Telegram. Confirm the login in Telegram and try again.",
+  "code_already_sent_retry_in": "A code was already sent. Try again in {time}",
+  "@code_already_sent_retry_in": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "code_already_sent_try_other_channel": "You can request a code the other way: by phone or by email."
 }
