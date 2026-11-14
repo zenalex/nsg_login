@@ -81,8 +81,9 @@ void main() {
     Future<dynamic> mount(
       WidgetTester tester,
       _Provider provider,
-      _Params params,
-    ) async {
+      _Params params, {
+      Locale? locale,
+    }) async {
       final dynamic page = modern
           ? NsgLoginPageNew(
               provider,
@@ -96,6 +97,7 @@ void main() {
             );
       await tester.pumpWidget(
         GetMaterialApp(
+          locale: locale,
           localizationsDelegates: NsgLoginLocalizations.localizationsDelegates,
           supportedLocales: NsgLoginLocalizations.supportedLocales,
           home: page as Widget,
@@ -158,10 +160,10 @@ void main() {
         ..response = NsgLoginResponse.fromJson({
           'errorCode': 40300,
           'isError': true,
-          'secondsBeforeRepeat': 60.0,
+          'secondsBeforeRepeat': 90.0,
         });
       final params = _Params();
-      await mount(tester, provider, params);
+      await mount(tester, provider, params, locale: const Locale('ru'));
       await tester.tap(find.text('REGISTER').first);
       await tester.pump();
       await tester.tap(find.text('SEND CODE'));
@@ -169,6 +171,21 @@ void main() {
 
       expect(find.widgetWithText(TextFormField, 'Code'), findsOneWidget);
       expect(params.errors, isEmpty);
+      expect(
+        find.text('Код уже отправлен, повторить через 01:30'),
+        findsOneWidget,
+      );
+      expect(
+        find.text(
+          'Можно запросить код другим способом: по телефону или по почте.',
+        ),
+        findsOneWidget,
+      );
+      await tester.pump(const Duration(seconds: 1));
+      expect(
+        find.text('Код уже отправлен, повторить через 01:29'),
+        findsOneWidget,
+      );
       expect(provider.requests, ['']);
       final password = find.widgetWithText(TextFormField, 'New password');
       await tester.tap(password);
@@ -271,6 +288,7 @@ void main() {
         await tester.pump();
         expect(find.widgetWithText(TextFormField, 'Code'), findsOneWidget);
         expect(params.errors, ['status:40300']);
+        expect(find.textContaining('01:00'), findsNothing);
       },
     );
   }

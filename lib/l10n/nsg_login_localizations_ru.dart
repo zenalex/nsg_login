@@ -166,4 +166,13 @@ class NsgLoginLocalizationsRu extends NsgLoginLocalizations {
   @override
   String get telegram_login_failed =>
       'Не удалось войти через Telegram. Подтвердите вход в Telegram и попробуйте снова.';
+
+  @override
+  String code_already_sent_retry_in(String time) {
+    return 'Код уже отправлен, повторить через $time';
+  }
+
+  @override
+  String get code_already_sent_try_other_channel =>
+      'Можно запросить код другим способом: по телефону или по почте.';
 }

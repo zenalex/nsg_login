@@ -16,6 +16,7 @@ import 'package:nsg_data/authorize/nsg_login_response.dart';
 import 'package:nsg_data/authorize/nsg_social_login_response.dart';
 import 'package:nsg_data/nsg_data.dart';
 import 'package:nsg_data/password/nsg_login_password_strength.dart';
+import 'package:nsg_login/code_repeat_clock.dart';
 import 'package:nsg_login/social_login/social_login_exception.dart';
 import 'package:nsg_login/password_strength_ui.dart';
 import 'package:nsg_login/helpers.dart';
@@ -73,6 +74,7 @@ class _LoginWidgetNewState extends State<LoginWidgetNew> {
   late NsgLoginType loginType;
   int secondsLeft = -1;
   Timer? updateTimer;
+  int? _codeRepeatLeft;
   NsgLoginState currentState = NsgLoginState.login;
   bool _loginResultHandled = false;
   bool _closeHandled = false;
@@ -499,11 +501,29 @@ class _LoginWidgetNewState extends State<LoginWidgetNew> {
     return image;
   }
 
+  void _startCodeRepeatCountdown(double seconds) {
+    final whole = seconds.isFinite ? seconds.floor() : 0;
+    _codeRepeatLeft = whole < 0 ? 0 : whole;
+    if (_codeRepeatLeft == 0) return;
+    updateTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+      setState(() {
+        final next = (_codeRepeatLeft ?? 1) - 1;
+        _codeRepeatLeft = next < 0 ? 0 : next;
+        if (_codeRepeatLeft == 0) timer.cancel();
+      });
+    });
+  }
+
   void checkRequestSMSanswer(
     BuildContext? context,
     NsgLoginResponse answerCode,
   ) {
     updateTimer?.cancel();
+    _codeRepeatLeft = null;
 
     // Legacy servers use 40300 for both a wrong code and a resend cooldown.
     // Only a code request with an explicit remaining delay is a cooldown.
@@ -520,6 +540,9 @@ class _LoginWidgetNewState extends State<LoginWidgetNew> {
           !widget.widgetParams.usePasswordLogin) {
         _telegramRecovery = false;
         currentState = NsgLoginState.verification;
+        if (codeAlreadySent) {
+          _startCodeRepeatCountdown(answerCode.secondsBeforeRepeat);
+        }
       } else {
         isLoginSuccessfull = true;
         // Вход по телефону и паролю завершается ЗДЕСЬ: ниже эта ветка делает
@@ -1179,25 +1202,55 @@ class _LoginWidgetNewState extends State<LoginWidgetNew> {
             ? null
             : tran.enter_confirmation_code_from_message,
       ),
-      Padding(
-        padding: const EdgeInsets.only(bottom: 12),
-        child: Text(
-          _telegramRecovery
-              ? _telegramRecoveryText
-              : loginType == NsgLoginType.email
-              ? tran.we_sent_you_the_code_in_a_message_by_email_phone(email)
-              : tran.we_sent_you_a_code_via_sms_to_your_phone_number(
-                  phoneNumber,
+      if (_codeRepeatLeft != null) ...[
+        Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: Text(
+            tran.code_already_sent_retry_in(
+              formatCodeRepeatClock(_codeRepeatLeft!),
+            ),
+            style:
+                widget.widgetParams.descriptionStyle ??
+                TextStyle(
+                  fontSize: nsgtheme.sizeM,
+                  color: nsgtheme.colorText,
+                  height: 1.35,
                 ),
-          style:
-              widget.widgetParams.descriptionStyle ??
-              TextStyle(
-                fontSize: nsgtheme.sizeM,
-                color: nsgtheme.colorText.withAlpha(180),
-                height: 1.35,
-              ),
+          ),
         ),
-      ),
+        Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: Text(
+            tran.code_already_sent_try_other_channel,
+            style:
+                widget.widgetParams.descriptionStyle ??
+                TextStyle(
+                  fontSize: nsgtheme.sizeM,
+                  color: nsgtheme.colorText.withAlpha(180),
+                  height: 1.35,
+                ),
+          ),
+        ),
+      ] else
+        Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: Text(
+            _telegramRecovery
+                ? _telegramRecoveryText
+                : loginType == NsgLoginType.email
+                ? tran.we_sent_you_the_code_in_a_message_by_email_phone(email)
+                : tran.we_sent_you_a_code_via_sms_to_your_phone_number(
+                    phoneNumber,
+                  ),
+            style:
+                widget.widgetParams.descriptionStyle ??
+                TextStyle(
+                  fontSize: nsgtheme.sizeM,
+                  color: nsgtheme.colorText.withAlpha(180),
+                  height: 1.35,
+                ),
+          ),
+        ),
       if (widget.widgetParams.usePasswordLogin) ...[
         _labeledField(
           label: widget.widgetParams.textEnterNewPassword,

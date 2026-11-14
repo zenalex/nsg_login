@@ -370,6 +370,18 @@ abstract class NsgLoginLocalizations {
   /// In ru, this message translates to:
   /// **'Не удалось войти через Telegram. Подтвердите вход в Telegram и попробуйте снова.'**
   String get telegram_login_failed;
+
+  /// No description provided for @code_already_sent_retry_in.
+  ///
+  /// In ru, this message translates to:
+  /// **'Код уже отправлен, повторить через {time}'**
+  String code_already_sent_retry_in(String time);
+
+  /// No description provided for @code_already_sent_try_other_channel.
+  ///
+  /// In ru, this message translates to:
+  /// **'Можно запросить код другим способом: по телефону или по почте.'**
+  String get code_already_sent_try_other_channel;
 }
 
 class _NsgLoginLocalizationsDelegate
