@@ -158,7 +158,7 @@ class DefaultSocialLoginDialogBody extends StatelessWidget {
               ),
             ],
           ),
-          Text(
+          if (showPhoneInput) Text(
             tran.enter_your_phone_number,
             style: TextStyle(color: nsgtheme.colorText),
             textAlign: TextAlign.center,

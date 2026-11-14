@@ -1,26 +1,10 @@
 import 'dart:async';
-import 'dart:math';
 
-import 'package:nsg_data/nsg_data_provider.dart';
+import 'package:nsg_data/nsg_data.dart';
+import 'package:nsg_data/authorize/nsg_login_response.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-/// Вход через мессенджер MAX по актуальной схеме Bot API (deep-link + webhook).
-///
-/// Старый путь (oauth.max.ru + скрейп HTML + проверка hash) умер: домен
-/// oauth.max.ru больше не существует, а MAX перешёл на платформу
-/// platform-api2.max.ru с подтверждением входа через webhook бота.
-///
-/// Поток:
-///   1. генерим одноразовый [nonce];
-///   2. [launchMax] открывает бота: web.max.ru/<bot>?startapp=<nonce>;
-///   3. пользователь жмёт «Запустить» — MAX шлёт webhook на НАШ сервер,
-///      сервер связывает nonce с пользователем MAX;
-///   4. [waitForConfirmation] поллит наш сервер (MaxPoll) до подтверждения;
-///   5. финальный обмен nonce -> app-токен делает verifyFunction = LoginMax
-///      (через штатный SocialLoginProvider.processVerify).
-///
-/// Клиент ходит ТОЛЬКО на наш сервер (provider.serverUri) — никакого
-/// кросс-доменного fetch, поэтому CORS на вебе не возникает.
+/// Login state stays in the initiating browser. Only payload goes to the bot.
 class MaxAuth {
   MaxAuth({
     required this.provider,
@@ -28,56 +12,164 @@ class MaxAuth {
     required this.botId,
     this.timeout = const Duration(seconds: 90),
     this.pollInterval = const Duration(seconds: 2),
-  }) : nonce = _generateNonce();
+    Future<bool> Function(Uri)? launcher,
+  }) : _launcher =
+           launcher ??
+           ((uri) => launchUrl(uri, mode: LaunchMode.externalApplication));
 
   final NsgDataProvider provider;
   final String botUsername;
   final String botId;
   final Duration timeout;
   final Duration pollInterval;
+  final Future<bool> Function(Uri) _launcher;
+  final _cancelledSignal = Completer<void>();
+  var _pollWake = Completer<void>();
+  String? _state;
+  String? _payload;
+  DateTime? _expires;
+  bool _cancelled = false;
+  bool _cancelSent = false;
+  bool _confirmed = false;
+  bool _handedOff = false;
 
-  /// Одноразовый идентификатор сессии входа, передаётся в deep-link как startapp
-  /// и обратно — в webhook бота. По нему сервер связывает MAX-пользователя.
-  final String nonce;
+  String get nonce =>
+      _state ?? (throw StateError('MAX challenge has not started'));
 
-  static String _generateNonce() {
-    final rnd = Random.secure();
-    final bytes = List<int>.generate(16, (_) => rnd.nextInt(256));
-    return bytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
-  }
-
-  /// Открывает бота MAX с нашим nonce в startapp-payload.
   Future<void> launchMax() async {
-    final candidates = <Uri>[
-      Uri.parse('https://web.max.ru/$botUsername?startapp=$nonce'),
-      Uri.parse('https://web.max.ru/$botId?startapp=$nonce'),
-      Uri.parse('https://web.max.ru'),
-    ];
-    for (final uri in candidates) {
-      if (await launchUrl(uri, mode: LaunchMode.externalApplication)) {
-        return;
-      }
+    if (_state != null || _cancelled) {
+      throw StateError('MAX challenge already used');
     }
-    throw Exception('Could not open MAX');
+    if (botUsername.isEmpty ||
+        !RegExp(r'^[a-zA-Z0-9_]+$').hasMatch(botUsername)) {
+      throw StateError('Invalid MAX bot username');
+    }
+    final response = await provider.baseRequest(
+      function: 'MaxLoginBegin',
+      method: 'POST',
+      url: '${provider.serverUri}/Api/Max/Login/Begin',
+      params: const {},
+    );
+    final payload = response?['payload'];
+    final state = response?['state'];
+    final seconds = response?['expiresIn'];
+    if (payload is! String ||
+        !RegExp(r'^[a-f0-9]{32}$').hasMatch(payload) ||
+        state is! String ||
+        !RegExp(r'^[a-f0-9]{32}\.[a-f0-9]{64}$').hasMatch(state) ||
+        !state.startsWith('$payload.') ||
+        seconds is! num ||
+        seconds <= 0 ||
+        seconds > 300) {
+      throw StateError('Invalid MAX challenge response');
+    }
+    _payload = payload;
+    _state = state;
+    _expires = DateTime.now().add(Duration(seconds: seconds.toInt()));
+    if (_cancelled) {
+      await cancel();
+      return;
+    }
+    final uri = Uri.https('max.ru', '/$botUsername', {'start': _payload!});
+    try {
+      if (!await _launcher(uri)) throw StateError('Could not open MAX');
+    } catch (_) {
+      await cancel();
+      rethrow;
+    }
   }
 
-  /// Поллит наш сервер (MaxPoll), пока webhook не свяжет [nonce] с пользователем.
-  /// Возвращает true при подтверждении, false — при таймауте.
+  String? get startCommand => _payload == null ? null : '/start $_payload';
+
+  void requestPoll() {
+    if (!_cancelled && !_pollWake.isCompleted) _pollWake.complete();
+  }
+
   Future<bool> waitForConfirmation() async {
-    final deadline = DateTime.now().add(timeout);
-    while (DateTime.now().isBefore(deadline)) {
-      final resp = await provider.requestSocialMethod(
-        function: 'MaxPoll',
-        methodName: 'MaxPoll',
-        params: {'state': nonce},
-      );
-      // errorCode == 0 -> сервер увидел подтверждение от webhook.
-      // Любой другой код (40400 pending / 40402 expired / сетевой сбой) -> ждём.
-      if (resp.errorCode == 0) {
-        return true;
+    if (_state == null) throw StateError('MAX challenge has not started');
+    var deadline = DateTime.now().add(timeout);
+    if (_expires!.isBefore(deadline)) deadline = _expires!;
+    try {
+      while (!_cancelled && DateTime.now().isBefore(deadline)) {
+        Map<String, dynamic>? response;
+        try {
+          response = await Future.any<Map<String, dynamic>?>([
+            provider.baseRequest(
+              function: 'MaxPoll',
+              method: 'POST',
+              url: '${provider.serverUri}/${provider.authorizationApi}/MaxPoll',
+              params: {'state': nonce},
+              timeout: deadline.difference(DateTime.now()),
+            ),
+            _cancelledSignal.future.then((_) => null),
+          ]);
+        } on NsgApiException catch (error) {
+          if (error.error.code != 1 && error.error.code != 2) rethrow;
+        }
+        if (_cancelled) return false;
+        if (response != null) {
+          // Startup IgnoreAndPopulate omits ErrorCode=0 from confirmed LoginResponse.
+          // Require the anonymous poll marker; an empty/malformed map is not success.
+          final legacyConfirmed =
+              !response.containsKey('errorCode') &&
+              response['isAnonymous'] == true &&
+              (response['isError'] == null || response['isError'] == false) &&
+              (response['token'] == null || response['token'] == '');
+          if (response['errorCode'] is! int && !legacyConfirmed) {
+            throw StateError('Invalid MAX poll response');
+          }
+          final reply = NsgLoginResponse.fromJson(response);
+          if (reply.errorCode == 0 && !reply.isError) {
+            _confirmed = true;
+            return true;
+          }
+          if (reply.errorCode != 40400 &&
+              reply.errorCode != 1 &&
+              reply.errorCode != 2) {
+            throw NsgApiException(
+              NsgApiError(code: reply.errorCode, message: reply.errorMessage),
+            );
+          }
+        }
+        await Future.any<void>([
+          Future<void>.delayed(pollInterval),
+          _cancelledSignal.future,
+          _pollWake.future,
+        ]);
+        _pollWake = Completer<void>();
       }
-      await Future.delayed(pollInterval);
+      await cancel();
+      return false;
+    } catch (_) {
+      await cancel();
+      rethrow;
     }
-    return false;
+  }
+
+  String takeConfirmedState() {
+    if (!_confirmed || _cancelled || _handedOff) {
+      throw StateError('MAX challenge is not confirmed');
+    }
+    _handedOff = true;
+    return nonce;
+  }
+
+  Future<void> cancel() async {
+    if (_handedOff) return;
+    _cancelled = true;
+    if (!_cancelledSignal.isCompleted) _cancelledSignal.complete();
+    if (_state == null || _cancelSent) return;
+    _cancelSent = true;
+    try {
+      await provider.baseRequest(
+        function: 'MaxLoginCancel',
+        method: 'POST',
+        url: '${provider.serverUri}/Api/Max/Login/Cancel',
+        params: {'state': nonce},
+        timeout: const Duration(seconds: 5),
+      );
+    } catch (_) {
+      /* The server challenge also has a bounded TTL. */
+    }
   }
 }
