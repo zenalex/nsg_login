@@ -291,5 +291,46 @@ void main() {
         expect(find.textContaining('01:00'), findsNothing);
       },
     );
+
+    testWidgets('$variant: wrong code clears the frozen resend countdown', (
+      tester,
+    ) async {
+      final provider = _Provider()
+        ..response = NsgLoginResponse.fromJson({
+          'errorCode': 40300,
+          'isError': true,
+          'secondsBeforeRepeat': 90.0,
+        });
+      final params = _Params();
+      await mount(tester, provider, params, locale: const Locale('ru'));
+      await tester.tap(find.text('REGISTER').first);
+      await tester.pump();
+      await tester.tap(find.text('SEND CODE'));
+      await tester.pump();
+      expect(
+        find.text('Код уже отправлен, повторить через 01:30'),
+        findsOneWidget,
+      );
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Code'),
+        '123456',
+      );
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'New password'),
+        'Example-password-123',
+      );
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Repeat password'),
+        'Example-password-123',
+      );
+      provider.response = NsgLoginResponse(errorCode: 40300, isError: true);
+      await tester.ensureVisible(find.text('CONFIRM'));
+      await tester.tap(find.text('CONFIRM'));
+      await tester.pump();
+      expect(params.errors, ['status:40300']);
+      expect(find.textContaining('Код уже отправлен'), findsNothing);
+      await tester.pump(const Duration(seconds: 1));
+      expect(find.textContaining('01:29'), findsNothing);
+    });
   }
 }
